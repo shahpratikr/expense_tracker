@@ -7,6 +7,7 @@ mysql_db_name = os.getenv("MYSQL_DB_NAME")
 MYSQL_DATABASE_URL = "mysql://%s:%s@%s:3306/%s" % (
     mysql_db_username, mysql_db_password, mysql_db_host, mysql_db_name)
 USERS_TABLE_NAME = "users"
+EXPENSES_TABLE_NAME = "expenses"
 ALGORITHM = "HS256"
 SECRET_KEY = "4fbafc86-4d2d-43b0-b7fb-decfe94d809f"
 MINIMUM_PASSWORD_LENGTH = 8

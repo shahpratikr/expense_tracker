@@ -1,13 +1,13 @@
 from email_validator import validate_email, EmailNotValidError
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db
 from exceptions import InvalidPassword, UsernameAlreadyTaken
-from models import UserCreate, UserLogin
-from utils import (create_token,
-                   create_user, get_user,
+from models import ExpenseCreate, UserCreate, UserLogin
+from utils import (authenticate_token, create_expense, create_token,
+                   create_user, remove_expense, get_expense, get_user,
                    hashed_password, validate_password, validate_username)
 
 app = FastAPI()
@@ -47,3 +47,26 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
                             detail="invalid password")
     token = create_token(existing_user)
     return JSONResponse({"token": token}, status.HTTP_200_OK)
+
+
+@app.post("/add_expense")
+async def add_expense(expense: ExpenseCreate, request: Request,
+                      db: Session = Depends(get_db)):
+    decoded_token = authenticate_token(request.headers["token"])
+    create_expense(db, expense, decoded_token["id"])
+    return JSONResponse({"message": "expense added"}, status.HTTP_201_CREATED)
+
+
+@app.get("/get_expense")
+async def list_expense(request: Request, db: Session = Depends(get_db)):
+    decoded_token = authenticate_token(request.headers["token"])
+    expense = get_expense(db, decoded_token["id"])
+    return JSONResponse({"expenses": expense}, status.HTTP_200_OK)
+
+
+@app.delete("/delete_expense/{expense_id}")
+async def delete_expense(request: Request, expense_id: int,
+                         db: Session = Depends(get_db)):
+    decoded_token = authenticate_token(request.headers["token"])
+    remove_expense(db, decoded_token["id"], expense_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

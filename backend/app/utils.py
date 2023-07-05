@@ -5,11 +5,36 @@ from datetime import datetime, timedelta
 
 import jwt
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from constants import ALGORITHM, MINIMUM_PASSWORD_LENGTH, SECRET_KEY
 from exceptions import InvalidPassword, UsernameAlreadyTaken
-from models import User, UserCreate
+from models import Expense, ExpenseCreate, User, UserCreate
+
+
+def authenticate_token(token: str):
+    http_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="invalid username or password"
+    )
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.DecodeError:
+        raise http_exception
+    if datetime.utcnow() >= datetime.strptime(decoded_token["expire"],
+                                              "%Y-%m-%dT%H:%M:%S.%f"):
+        raise http_exception
+    return decoded_token
+
+
+def create_expense(db: Session, expense: ExpenseCreate, user_id: str):
+    new_expense = Expense(user_id=user_id, name=expense.name,
+                          price=expense.price, type=expense.type,
+                          created_at=datetime.utcnow())
+    db.add(new_expense)
+    db.commit()
+    db.refresh(new_expense)
 
 
 def create_token(user: User):
@@ -29,6 +54,21 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
 
 
+def get_expense(db: Session, user_id: id, expense_id: id = 0):
+    expenses = []
+    if expense_id != 0:
+        return db.query(Expense).filter(
+            Expense.user_id == user_id and Expense.id == expense_id).first()
+    for expense in db.query(Expense).filter(Expense.user_id == user_id).all():
+        expense_dict = expense.__dict__
+        del expense_dict["_sa_instance_state"]
+        if expense_dict["created_at"] is None:
+            expense_dict["created_at"] = expense_dict["created_at"].strftime(
+                "%d/%m/%Y %H:%M:%S")
+        expenses.append(expense_dict)
+    return expenses
+
+
 def get_user(db: Session, username: str = "", email: str = ""):
     if email:
         return db.query(User).filter(User.email == email).first()
@@ -38,6 +78,15 @@ def get_user(db: Session, username: str = "", email: str = ""):
 
 def hashed_password(password: str):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+
+def remove_expense(db: Session, user_id: int, expense_id: int):
+    existing_expense = get_expense(db, user_id, expense_id)
+    if not existing_expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="expense not found")
+    db.delete(existing_expense)
+    db.commit()
 
 
 def validate_password(password: str):
