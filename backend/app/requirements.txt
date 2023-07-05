@@ -1,0 +1,8 @@
+fastapi==0.98.0
+flake8==6.0.0
+mysqlclient==2.1.1
+pydantic==1.10.9
+pyjwt==2.7.0
+pymysql==1.1.0
+sqlalchemy==2.0.17
+uvicorn==0.22.0
