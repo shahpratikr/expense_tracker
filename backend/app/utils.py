@@ -22,6 +22,7 @@ def create_token(user: User):
 
 def create_user(db: Session, user: UserCreate):
     db_user = User(email=user.email, username=user.username,
+                   created_at=datetime.utcnow(),
                    password=hashed_password(user.password))
     db.add(db_user)
     db.commit()
