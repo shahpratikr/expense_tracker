@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: expense-tracker-backend
-          image: pratikrshah/expense_tracker_backend:v0.1
+          image: pratikrshah/expense_tracker_backend:v1.0
           ports:
             - containerPort: 8000
           env:

@@ -6,7 +6,6 @@ metadata:
 spec:
   selector:
     app: expense-tracker-backend
-  type: NodePort
   ports:
   - protocol: TCP
     port: 8000
