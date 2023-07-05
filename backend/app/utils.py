@@ -42,6 +42,7 @@ def create_token(user: User):
     expire = datetime.utcnow() + timedelta(hours=1)
     to_encode.update({"expire": expire.isoformat()})
     del to_encode["_sa_instance_state"]
+    del to_encode["created_at"]
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -62,7 +63,7 @@ def get_expense(db: Session, user_id: id, expense_id: id = 0):
     for expense in db.query(Expense).filter(Expense.user_id == user_id).all():
         expense_dict = expense.__dict__
         del expense_dict["_sa_instance_state"]
-        if expense_dict["created_at"] is None:
+        if expense_dict["created_at"] is not None:
             expense_dict["created_at"] = expense_dict["created_at"].strftime(
                 "%d/%m/%Y %H:%M:%S")
         expenses.append(expense_dict)
