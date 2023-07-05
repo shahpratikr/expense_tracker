@@ -9,3 +9,4 @@ MYSQL_DATABASE_URL = "mysql://%s:%s@%s:3306/%s" % (
 USERS_TABLE_NAME = "users"
 ALGORITHM = "HS256"
 SECRET_KEY = "4fbafc86-4d2d-43b0-b7fb-decfe94d809f"
+MINIMUM_PASSWORD_LENGTH = 8
