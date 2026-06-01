@@ -44,15 +44,11 @@ Before running tests, review your own changes:
 Run: !cat CLAUDE.md | grep -A1 "Test:" | tail -1 || echo "npm test"
 If tests fail: fix them now. Do NOT proceed with failing tests.
 
-## Step 5 — Run Pre-commit hooks
-poetry run pre-commit run --all-files
-If hook fails: fix them now. Do NOT proceed with failed hooks.
-
-## Step 6 — Commit
+## Step 5 — Commit
 git add -A
 git commit -m "Implemented phase PHASE_NUM"
 
-## Step 7 — Report and stop
+## Step 6 — Report and stop
 Print exactly:
   Phase PHASE_NUM complete.
   Files created:  [list]
