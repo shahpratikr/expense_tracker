@@ -38,13 +38,17 @@ class LoanRepository(private val loanDao: LoanDao) : ILoanRepository {
         id = id,
         name = name,
         current_balance = currentBalance,
-        created_at = createdAt.format(dateFormatter)
+        created_at = createdAt.format(dateFormatter),
+        interest_rate = interestRate,
+        emi = emi
     )
 
     private fun LoanEntity.toDomain() = Loan(
         id = id,
         name = name,
         currentBalance = current_balance,
-        createdAt = LocalDate.parse(created_at, dateFormatter)
+        createdAt = LocalDate.parse(created_at, dateFormatter),
+        interestRate = interest_rate,
+        emi = emi
     )
 }

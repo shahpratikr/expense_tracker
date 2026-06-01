@@ -102,8 +102,10 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             title = "Add Loan",
             initialName = "",
             initialBalance = "",
-            onConfirm = { name, balance ->
-                viewModel.addLoan(name, balance)
+            initialInterestRate = "",
+            initialEmi = "",
+            onConfirm = { name, balance, rate, emi ->
+                viewModel.addLoan(name, balance, rate, emi)
                 showAddDialog = false
             },
             onDismiss = { showAddDialog = false }
@@ -115,8 +117,12 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             title = "Edit Loan",
             initialName = loan.name,
             initialBalance = String.format(Locale.US, "%.2f", loan.currentBalance),
-            onConfirm = { name, balance ->
-                viewModel.editLoan(loan.copy(name = name, currentBalance = balance))
+            initialInterestRate = if (loan.interestRate > 0.0) String.format(Locale.US, "%.2f", loan.interestRate) else "",
+            initialEmi = if (loan.emi > 0.0) String.format(Locale.US, "%.2f", loan.emi) else "",
+            onConfirm = { name, balance, rate, emi ->
+                viewModel.editLoan(
+                    loan.copy(name = name, currentBalance = balance, interestRate = rate, emi = emi)
+                )
                 loanToEdit = null
             },
             onDismiss = { loanToEdit = null }
@@ -137,7 +143,7 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
 
     loanToView?.let { loan ->
         // Fresh ideas are generated each time a loan is opened.
-        val ideas = remember(loan) { viewModel.generateRepaymentIdeas(loan.currentBalance) }
+        val ideas = remember(loan) { viewModel.generateRepaymentIdeas(loan) }
         RepaymentIdeasDialog(
             loan = loan,
             ideas = ideas,
@@ -163,6 +169,15 @@ fun RepaymentIdeasDialog(
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+                if (loan.emi > 0.0 || loan.interestRate > 0.0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "EMI ₹${String.format(Locale.US, "%,.0f", loan.emi)} · " +
+                            "Rate ${String.format(Locale.US, "%.2f", loan.interestRate)}% p.a.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Ideas to repay earlier", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -190,17 +205,22 @@ fun LoanFormDialog(
     title: String,
     initialName: String,
     initialBalance: String,
-    onConfirm: (String, Double) -> Unit,
+    initialInterestRate: String,
+    initialEmi: String,
+    onConfirm: (String, Double, Double, Double) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf(TextFieldValue(initialName)) }
     var balance by remember { mutableStateOf(TextFieldValue(initialBalance)) }
+    var interestRate by remember { mutableStateOf(TextFieldValue(initialInterestRate)) }
+    var emi by remember { mutableStateOf(TextFieldValue(initialEmi)) }
+    var validationError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 TextField(
                     value = name,
                     onValueChange = { name = it },
@@ -215,15 +235,41 @@ fun LoanFormDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = interestRate,
+                    onValueChange = { interestRate = it },
+                    label = { Text("Interest Rate (% per year)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = emi,
+                    onValueChange = { emi = it },
+                    label = { Text("Current EMI (monthly payment)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                validationError?.let { error ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val trimmedName = name.text.trim()
-                    val balanceAmount = balance.text.toDoubleOrNull() ?: 0.0
-                    if (trimmedName.isNotBlank() && balanceAmount >= 0) {
-                        onConfirm(trimmedName, balanceAmount)
+                    val balanceAmount = balance.text.toDoubleOrNull()
+                    val rate = interestRate.text.ifBlank { "0" }.toDoubleOrNull()
+                    val emiAmount = emi.text.ifBlank { "0" }.toDoubleOrNull()
+                    when {
+                        trimmedName.isBlank() -> validationError = "Name is required"
+                        balanceAmount == null || balanceAmount < 0 -> validationError = "Enter a valid balance"
+                        rate == null || rate < 0 -> validationError = "Enter a valid interest rate"
+                        emiAmount == null || emiAmount < 0 -> validationError = "Enter a valid EMI"
+                        else -> onConfirm(trimmedName, balanceAmount, rate, emiAmount)
                     }
                 }
             ) {

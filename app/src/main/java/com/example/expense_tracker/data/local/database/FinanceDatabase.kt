@@ -20,7 +20,7 @@ import com.example.expense_tracker.data.model.LoanEntity
         BudgetEntity::class,
         LoanEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class FinanceDatabase : RoomDatabase() {

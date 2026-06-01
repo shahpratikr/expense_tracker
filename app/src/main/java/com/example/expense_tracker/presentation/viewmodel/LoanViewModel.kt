@@ -60,10 +60,10 @@ class LoanViewModel @Inject constructor(
         }
     }
 
-    fun addLoan(name: String, currentBalance: Double) {
+    fun addLoan(name: String, currentBalance: Double, interestRate: Double, emi: Double) {
         viewModelScope.launch {
             try {
-                addLoanUseCase(name, currentBalance)
+                addLoanUseCase(name, currentBalance, interestRate, emi)
                 loadLoans()
             } catch (exception: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -112,8 +112,8 @@ class LoanViewModel @Inject constructor(
         }
     }
 
-    fun generateRepaymentIdeas(currentBalance: Double): List<RepaymentIdea> {
-        return generateRepaymentIdeasUseCase(currentBalance)
+    fun generateRepaymentIdeas(loan: Loan): List<RepaymentIdea> {
+        return generateRepaymentIdeasUseCase(loan)
     }
 
     fun clearError() {

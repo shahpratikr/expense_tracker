@@ -9,5 +9,7 @@ data class LoanEntity(
     val id: Long = 0,
     val name: String,
     val current_balance: Double,
-    val created_at: String
+    val created_at: String,
+    val interest_rate: Double = 0.0,
+    val emi: Double = 0.0
 )

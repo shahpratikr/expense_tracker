@@ -49,6 +49,14 @@ fun LoanCard(
                         "Balance: ₹${String.format(Locale.US, "%.2f", loan.currentBalance)}",
                         style = MaterialTheme.typography.bodyMedium
                     )
+                    if (loan.emi > 0.0 || loan.interestRate > 0.0) {
+                        Text(
+                            "EMI ₹${String.format(Locale.US, "%,.0f", loan.emi)} · " +
+                                "${String.format(Locale.US, "%.2f", loan.interestRate)}% p.a.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Row {

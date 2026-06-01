@@ -2,6 +2,8 @@ package com.example.expense_tracker.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.expense_tracker.data.local.database.FinanceDatabase
 import dagger.Module
 import dagger.Provides
@@ -14,6 +16,14 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    // v2 adds interest_rate and emi to the loans table to power repayment suggestions.
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE loans ADD COLUMN interest_rate REAL NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE loans ADD COLUMN emi REAL NOT NULL DEFAULT 0")
+        }
+    }
+
     @Singleton
     @Provides
     fun provideFinanceDatabase(
@@ -23,6 +33,6 @@ object DatabaseModule {
             context,
             FinanceDatabase::class.java,
             "finance_database"
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
     }
 }

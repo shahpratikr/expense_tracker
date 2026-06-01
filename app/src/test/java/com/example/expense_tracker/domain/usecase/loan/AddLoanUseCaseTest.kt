@@ -26,7 +26,7 @@ class AddLoanUseCaseTest {
     fun testAddLoanWithValidInputs() = runTest {
         whenever(loanRepository.add(any())).thenReturn(1L)
 
-        val result = addLoanUseCase("Car Loan", 5000.0)
+        val result = addLoanUseCase("Car Loan", 5000.0, interestRate = 9.5, emi = 500.0)
 
         assert(result == 1L)
         verify(loanRepository).add(any())
@@ -40,5 +40,15 @@ class AddLoanUseCaseTest {
     @Test(expected = IllegalArgumentException::class)
     fun testAddLoanWithNegativeBalance() = runTest {
         addLoanUseCase("Car Loan", -100.0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testAddLoanWithNegativeInterestRate() = runTest {
+        addLoanUseCase("Car Loan", 5000.0, interestRate = -1.0, emi = 500.0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testAddLoanWithNegativeEmi() = runTest {
+        addLoanUseCase("Car Loan", 5000.0, interestRate = 9.5, emi = -50.0)
     }
 }
