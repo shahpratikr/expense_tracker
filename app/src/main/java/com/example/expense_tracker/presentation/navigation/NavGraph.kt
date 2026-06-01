@@ -66,7 +66,9 @@ fun NavGraph(navController: NavHostController) {
             LoanScreen()
         }
         composable(NavRoutes.DASHBOARD) {
-            DashboardScreen()
+            DashboardScreen(
+                onSpendingClick = { navController.navigate(NavRoutes.EXPENSE_LIST) }
+            )
         }
         composable(NavRoutes.CATEGORY_MANAGEMENT) {
             CategoryManagementScreen()

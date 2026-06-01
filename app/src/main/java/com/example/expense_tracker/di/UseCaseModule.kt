@@ -12,6 +12,7 @@ import com.example.expense_tracker.domain.usecase.budget.GetBudgetWithSpentUseCa
 import com.example.expense_tracker.domain.usecase.category.AddCategoryUseCase
 import com.example.expense_tracker.domain.usecase.category.CreatePredefinedCategoriesUseCase
 import com.example.expense_tracker.domain.usecase.category.GetCategoriesUseCase
+import com.example.expense_tracker.domain.usecase.dashboard.GetMonthlySpendingUseCase
 import com.example.expense_tracker.domain.usecase.expense.AddExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.DeleteExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.EditExpenseUseCase
@@ -141,5 +142,11 @@ object UseCaseModule {
     @Provides
     fun provideUpdateLoanBalanceUseCase(repository: ILoanRepository): UpdateLoanBalanceUseCase {
         return UpdateLoanBalanceUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetMonthlySpendingUseCase(repository: IExpenseRepository): GetMonthlySpendingUseCase {
+        return GetMonthlySpendingUseCase(repository)
     }
 }
