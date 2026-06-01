@@ -1,8 +1,10 @@
 package com.example.expense_tracker.di
 
 import com.example.expense_tracker.data.local.database.FinanceDatabase
+import com.example.expense_tracker.data.local.repository.BudgetRepository
 import com.example.expense_tracker.data.local.repository.ExpenseCategoryRepository
 import com.example.expense_tracker.data.local.repository.ExpenseRepository
+import com.example.expense_tracker.domain.repository.IBudgetRepository
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
 import com.example.expense_tracker.domain.repository.IExpenseRepository
 import dagger.Module
@@ -25,5 +27,11 @@ object RepositoryModule {
     @Provides
     fun provideExpenseCategoryRepository(database: FinanceDatabase): IExpenseCategoryRepository {
         return ExpenseCategoryRepository(database.expenseCategoryDao())
+    }
+
+    @Singleton
+    @Provides
+    fun provideBudgetRepository(database: FinanceDatabase): IBudgetRepository {
+        return BudgetRepository(database.budgetDao())
     }
 }

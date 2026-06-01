@@ -1,7 +1,13 @@
 package com.example.expense_tracker.di
 
+import com.example.expense_tracker.domain.repository.IBudgetRepository
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
 import com.example.expense_tracker.domain.repository.IExpenseRepository
+import com.example.expense_tracker.domain.usecase.budget.AddBudgetUseCase
+import com.example.expense_tracker.domain.usecase.budget.DeleteBudgetUseCase
+import com.example.expense_tracker.domain.usecase.budget.EditBudgetUseCase
+import com.example.expense_tracker.domain.usecase.budget.GetBudgetsUseCase
+import com.example.expense_tracker.domain.usecase.budget.GetBudgetWithSpentUseCase
 import com.example.expense_tracker.domain.usecase.category.AddCategoryUseCase
 import com.example.expense_tracker.domain.usecase.category.CreatePredefinedCategoriesUseCase
 import com.example.expense_tracker.domain.usecase.category.GetCategoriesUseCase
@@ -66,5 +72,38 @@ object UseCaseModule {
     @Provides
     fun provideCreatePredefinedCategoriesUseCase(repository: IExpenseCategoryRepository): CreatePredefinedCategoriesUseCase {
         return CreatePredefinedCategoriesUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetBudgetsUseCase(repository: IBudgetRepository): GetBudgetsUseCase {
+        return GetBudgetsUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideAddBudgetUseCase(repository: IBudgetRepository): AddBudgetUseCase {
+        return AddBudgetUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideEditBudgetUseCase(repository: IBudgetRepository): EditBudgetUseCase {
+        return EditBudgetUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideDeleteBudgetUseCase(repository: IBudgetRepository): DeleteBudgetUseCase {
+        return DeleteBudgetUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetBudgetWithSpentUseCase(
+        budgetRepository: IBudgetRepository,
+        expenseRepository: IExpenseRepository
+    ): GetBudgetWithSpentUseCase {
+        return GetBudgetWithSpentUseCase(budgetRepository, expenseRepository)
     }
 }
