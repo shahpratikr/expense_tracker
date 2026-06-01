@@ -3,6 +3,7 @@ package com.example.expense_tracker.di
 import com.example.expense_tracker.domain.repository.IBudgetRepository
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
 import com.example.expense_tracker.domain.repository.IExpenseRepository
+import com.example.expense_tracker.domain.repository.ILoanRepository
 import com.example.expense_tracker.domain.usecase.budget.AddBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.DeleteBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.EditBudgetUseCase
@@ -16,6 +17,11 @@ import com.example.expense_tracker.domain.usecase.expense.DeleteExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.EditExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.FilterExpensesByDateUseCase
 import com.example.expense_tracker.domain.usecase.expense.GetExpensesUseCase
+import com.example.expense_tracker.domain.usecase.loan.AddLoanUseCase
+import com.example.expense_tracker.domain.usecase.loan.DeleteLoanUseCase
+import com.example.expense_tracker.domain.usecase.loan.EditLoanUseCase
+import com.example.expense_tracker.domain.usecase.loan.GetLoansUseCase
+import com.example.expense_tracker.domain.usecase.loan.UpdateLoanBalanceUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -105,5 +111,35 @@ object UseCaseModule {
         expenseRepository: IExpenseRepository
     ): GetBudgetWithSpentUseCase {
         return GetBudgetWithSpentUseCase(budgetRepository, expenseRepository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetLoansUseCase(repository: ILoanRepository): GetLoansUseCase {
+        return GetLoansUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideAddLoanUseCase(repository: ILoanRepository): AddLoanUseCase {
+        return AddLoanUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideEditLoanUseCase(repository: ILoanRepository): EditLoanUseCase {
+        return EditLoanUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideDeleteLoanUseCase(repository: ILoanRepository): DeleteLoanUseCase {
+        return DeleteLoanUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideUpdateLoanBalanceUseCase(repository: ILoanRepository): UpdateLoanBalanceUseCase {
+        return UpdateLoanBalanceUseCase(repository)
     }
 }
