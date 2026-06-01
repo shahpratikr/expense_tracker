@@ -16,6 +16,7 @@ object NavRoutes {
     const val HOME = "home"
     const val EXPENSE_LIST = "expense_list"
     const val EXPENSE_DETAIL = "expense_detail"
+    const val EXPENSE_DETAIL_WITH_ID = "expense_detail/{expenseId}"
     const val BUDGET = "budget"
     const val LOAN = "loan"
     const val DASHBOARD = "dashboard"
@@ -29,13 +30,34 @@ fun NavGraph(navController: NavHostController) {
         startDestination = NavRoutes.HOME
     ) {
         composable(NavRoutes.HOME) {
-            HomeScreen()
+            HomeScreen(
+                onExpenseListClick = { navController.navigate(NavRoutes.EXPENSE_LIST) },
+                onCategoryManagementClick = { navController.navigate(NavRoutes.CATEGORY_MANAGEMENT) },
+                onDashboardClick = { navController.navigate(NavRoutes.DASHBOARD) },
+                onBudgetClick = { navController.navigate(NavRoutes.BUDGET) },
+                onLoanClick = { navController.navigate(NavRoutes.LOAN) }
+            )
         }
         composable(NavRoutes.EXPENSE_LIST) {
-            ExpenseListScreen()
+            ExpenseListScreen(
+                onExpenseClick = { expense ->
+                    navController.navigate("expense_detail/${expense.id}")
+                },
+                onAddExpenseClick = { navController.navigate(NavRoutes.EXPENSE_DETAIL) }
+            )
         }
         composable(NavRoutes.EXPENSE_DETAIL) {
-            ExpenseDetailScreen()
+            ExpenseDetailScreen(
+                onBackClick = { navController.popBackStack() },
+                expenseId = null
+            )
+        }
+        composable(NavRoutes.EXPENSE_DETAIL_WITH_ID) { backStackEntry ->
+            val expenseId = backStackEntry.arguments?.getString("expenseId")?.toLongOrNull()
+            ExpenseDetailScreen(
+                onBackClick = { navController.popBackStack() },
+                expenseId = expenseId
+            )
         }
         composable(NavRoutes.BUDGET) {
             BudgetScreen()

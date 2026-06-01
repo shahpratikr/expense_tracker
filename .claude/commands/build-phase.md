@@ -1,7 +1,8 @@
 ---
 description: Build phase of the app — scaffold, implement, test, commit
-argument-hint:  ""
-model: claude-sonnet-4-20250514
+argument-hint: "<phase-num>"
+model: sonnet
+context: fork
 allowed-tools: Bash, Read, Write, Edit, MultiEdit, Glob, Grep
 ---
 

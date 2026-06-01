@@ -1,6 +1,6 @@
 ---
 description: Interview the user and produce docs/PRD.md
-model: claude-haiku-4-5-20251001
+model: haiku
 ---
 Do NOT write any code or create any files until Step 4.
 

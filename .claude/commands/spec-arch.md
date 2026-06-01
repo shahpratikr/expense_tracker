@@ -1,6 +1,6 @@
 ---
 description: Read PRD.md and produce docs/ARCHITECTURE.md
-model: claude-haiku-4-5-20251001
+model: haiku
 ---
 Read docs/PRD.md. Do NOT write code. Do NOT install packages.
 
