@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.expense_tracker.domain.model.Budget
+import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.viewmodel.BudgetViewModel
 import java.time.YearMonth
 
@@ -49,17 +50,8 @@ fun BudgetScreen(viewModel: BudgetViewModel = hiltViewModel()) {
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
 
-    if (uiState.error != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearError() },
-            title = { Text("Error") },
-            text = { Text(uiState.error ?: "Unknown error") },
-            confirmButton = {
-                Button(onClick = { viewModel.clearError() }) {
-                    Text("OK")
-                }
-            }
-        )
+    uiState.error?.let { message ->
+        ErrorDialog(message = message, onDismiss = { viewModel.clearError() })
     }
 
     Scaffold(
@@ -139,7 +131,7 @@ fun BudgetItem(budget: Budget, onEdit: () -> Unit, onDelete: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Category ID: ${budget.categoryId}", style = MaterialTheme.typography.labelSmall)
                 Text(
-                    "Budget: \$${String.format("%.2f", budget.monthlyLimit)}",
+                    "Budget: ₹${String.format("%.2f", budget.monthlyLimit)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

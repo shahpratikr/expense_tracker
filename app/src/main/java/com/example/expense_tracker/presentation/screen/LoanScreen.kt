@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.expense_tracker.domain.model.Loan
+import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.component.LoanCard
 import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
 
@@ -44,17 +45,8 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     var loanToEdit by remember { mutableStateOf<Loan?>(null) }
     var loanToUpdateBalance by remember { mutableStateOf<Loan?>(null) }
 
-    if (uiState.error != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearError() },
-            title = { Text("Error") },
-            text = { Text(uiState.error ?: "Unknown error") },
-            confirmButton = {
-                Button(onClick = { viewModel.clearError() }) {
-                    Text("OK")
-                }
-            }
-        )
+    uiState.error?.let { message ->
+        ErrorDialog(message = message, onDismiss = { viewModel.clearError() })
     }
 
     Scaffold(

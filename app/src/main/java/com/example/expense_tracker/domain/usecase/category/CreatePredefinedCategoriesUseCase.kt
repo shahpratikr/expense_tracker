@@ -2,9 +2,13 @@ package com.example.expense_tracker.domain.usecase.category
 
 import com.example.expense_tracker.domain.model.ExpenseCategory
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
+import kotlinx.coroutines.flow.first
 
 class CreatePredefinedCategoriesUseCase(private val categoryRepository: IExpenseCategoryRepository) {
     suspend operator fun invoke() {
+        if (categoryRepository.getPredefined().first().isNotEmpty()) {
+            return
+        }
         val predefined = listOf(
             ExpenseCategory(name = "Food", isPredefined = true),
             ExpenseCategory(name = "Transport", isPredefined = true),

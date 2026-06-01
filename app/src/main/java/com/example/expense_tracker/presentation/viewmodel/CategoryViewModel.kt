@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.expense_tracker.domain.model.ExpenseCategory
 import com.example.expense_tracker.domain.usecase.category.AddCategoryUseCase
-import com.example.expense_tracker.domain.usecase.category.CreatePredefinedCategoriesUseCase
 import com.example.expense_tracker.domain.usecase.category.GetCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,28 +22,14 @@ data class CategoryUiState(
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val getCategoriesUseCase: GetCategoriesUseCase,
-    private val addCategoryUseCase: AddCategoryUseCase,
-    private val createPredefinedCategoriesUseCase: CreatePredefinedCategoriesUseCase
+    private val addCategoryUseCase: AddCategoryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CategoryUiState())
     val uiState: StateFlow<CategoryUiState> = _uiState.asStateFlow()
 
     init {
-        initializePredefinedCategories()
-    }
-
-    private fun initializePredefinedCategories() {
-        viewModelScope.launch {
-            try {
-                createPredefinedCategoriesUseCase()
-                loadCategories()
-            } catch (exception: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = exception.message ?: "Failed to initialize categories"
-                )
-            }
-        }
+        loadCategories()
     }
 
     fun loadCategories() {

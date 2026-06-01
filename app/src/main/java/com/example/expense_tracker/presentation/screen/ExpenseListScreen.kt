@@ -114,7 +114,8 @@ fun ExpenseListScreen(
                         ExpenseItem(
                             expense = expense,
                             categoryName = categoryName,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onExpenseClick(expense) }
                         )
                     }
                 }

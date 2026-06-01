@@ -42,7 +42,7 @@ fun LoanCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(loan.name, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Balance: \$${String.format("%.2f", loan.currentBalance)}",
+                        "Balance: ₹${String.format("%.2f", loan.currentBalance)}",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

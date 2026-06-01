@@ -68,7 +68,7 @@ fun DashboardScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "\$${String.format("%.2f", uiState.totalMonthlySpending)}",
+                            text = "₹${String.format("%.2f", uiState.totalMonthlySpending)}",
                             style = MaterialTheme.typography.headlineLarge,
                             textAlign = TextAlign.Center
                         )
