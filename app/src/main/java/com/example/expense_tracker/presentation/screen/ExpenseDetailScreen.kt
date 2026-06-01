@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,7 @@ import com.example.expense_tracker.presentation.viewmodel.CategoryViewModel
 import com.example.expense_tracker.presentation.viewmodel.ExpenseViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ExpenseDetailScreen(
@@ -45,6 +47,17 @@ fun ExpenseDetailScreen(
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var dateStr by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(expenseId) {
+        if (expenseId != null) {
+            val existing = expenseViewModel.getExpenseById(expenseId)
+            if (existing != null) {
+                amount = String.format(Locale.US, "%.2f", existing.amount)
+                selectedCategoryId = existing.categoryId
+                dateStr = existing.date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            }
+        }
+    }
 
     if (expenseUiState.error != null) {
         ErrorDialog(

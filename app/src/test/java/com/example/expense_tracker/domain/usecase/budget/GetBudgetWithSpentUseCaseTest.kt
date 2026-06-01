@@ -10,8 +10,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import java.time.LocalDate
 import java.time.YearMonth
 
 class GetBudgetWithSpentUseCaseTest {
@@ -40,7 +40,7 @@ class GetBudgetWithSpentUseCaseTest {
         )
 
         whenever(budgetRepository.getByCategoryAndMonth(categoryId, month)).thenReturn(budget)
-        whenever(expenseRepository.getAll()).thenReturn(flowOf(expenses))
+        whenever(expenseRepository.getByDateRange(any(), any())).thenReturn(flowOf(expenses))
 
         val result = getBudgetWithSpentUseCase(categoryId, month)
 

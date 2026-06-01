@@ -1,5 +1,6 @@
 package com.example.expense_tracker.presentation.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.expense_tracker.domain.model.Loan
+import java.util.Locale
 
 @Composable
 fun LoanCard(
@@ -26,12 +28,14 @@ fun LoanCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onUpdateBalance: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(8.dp)
+            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -42,7 +46,7 @@ fun LoanCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(loan.name, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Balance: ₹${String.format("%.2f", loan.currentBalance)}",
+                        "Balance: ₹${String.format(Locale.US, "%.2f", loan.currentBalance)}",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.viewmodel.DashboardViewModel
+import java.util.Locale
 
 @Composable
 fun DashboardScreen(
@@ -68,7 +69,7 @@ fun DashboardScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "₹${String.format("%.2f", uiState.totalMonthlySpending)}",
+                            text = "₹${String.format(Locale.US, "%.2f", uiState.totalMonthlySpending)}",
                             style = MaterialTheme.typography.headlineLarge,
                             textAlign = TextAlign.Center
                         )

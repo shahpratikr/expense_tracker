@@ -6,7 +6,9 @@ import com.example.expense_tracker.domain.model.Loan
 import com.example.expense_tracker.domain.usecase.loan.AddLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.DeleteLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.EditLoanUseCase
+import com.example.expense_tracker.domain.usecase.loan.GenerateRepaymentIdeasUseCase
 import com.example.expense_tracker.domain.usecase.loan.GetLoansUseCase
+import com.example.expense_tracker.domain.usecase.loan.RepaymentIdea
 import com.example.expense_tracker.domain.usecase.loan.UpdateLoanBalanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +30,8 @@ class LoanViewModel @Inject constructor(
     private val addLoanUseCase: AddLoanUseCase,
     private val editLoanUseCase: EditLoanUseCase,
     private val deleteLoanUseCase: DeleteLoanUseCase,
-    private val updateLoanBalanceUseCase: UpdateLoanBalanceUseCase
+    private val updateLoanBalanceUseCase: UpdateLoanBalanceUseCase,
+    private val generateRepaymentIdeasUseCase: GenerateRepaymentIdeasUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoanUiState())
@@ -107,6 +110,10 @@ class LoanViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun generateRepaymentIdeas(currentBalance: Double): List<RepaymentIdea> {
+        return generateRepaymentIdeasUseCase(currentBalance)
     }
 
     fun clearError() {

@@ -43,6 +43,10 @@ android {
         compose true
     }
 
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.3'
     }
@@ -51,6 +55,12 @@ android {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
+    }
+}
+
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
 }
 

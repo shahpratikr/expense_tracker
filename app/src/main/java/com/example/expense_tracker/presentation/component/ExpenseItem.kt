@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.expense_tracker.domain.model.Expense
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ExpenseItem(
@@ -55,7 +56,7 @@ fun ExpenseItem(
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "₹${String.format("%.2f", expense.amount)}",
+                    text = "₹${String.format(Locale.US, "%.2f", expense.amount)}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

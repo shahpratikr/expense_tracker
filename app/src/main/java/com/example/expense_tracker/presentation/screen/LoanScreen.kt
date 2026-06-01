@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -17,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -34,9 +37,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.expense_tracker.domain.model.Loan
+import com.example.expense_tracker.domain.usecase.loan.RepaymentIdea
 import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.component.LoanCard
 import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
+import java.util.Locale
 
 @Composable
 fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
@@ -44,6 +49,7 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     var showAddDialog by remember { mutableStateOf(false) }
     var loanToEdit by remember { mutableStateOf<Loan?>(null) }
     var loanToUpdateBalance by remember { mutableStateOf<Loan?>(null) }
+    var loanToView by remember { mutableStateOf<Loan?>(null) }
 
     uiState.error?.let { message ->
         ErrorDialog(message = message, onDismiss = { viewModel.clearError() })
@@ -81,7 +87,8 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
                             loan = loan,
                             onEdit = { loanToEdit = loan },
                             onDelete = { viewModel.deleteLoan(loan) },
-                            onUpdateBalance = { loanToUpdateBalance = loan }
+                            onUpdateBalance = { loanToUpdateBalance = loan },
+                            onClick = { loanToView = loan }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -107,7 +114,7 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
         LoanFormDialog(
             title = "Edit Loan",
             initialName = loan.name,
-            initialBalance = String.format("%.2f", loan.currentBalance),
+            initialBalance = String.format(Locale.US, "%.2f", loan.currentBalance),
             onConfirm = { name, balance ->
                 viewModel.editLoan(loan.copy(name = name, currentBalance = balance))
                 loanToEdit = null
@@ -119,7 +126,7 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     loanToUpdateBalance?.let { loan ->
         UpdateBalanceDialog(
             loanName = loan.name,
-            initialBalance = String.format("%.2f", loan.currentBalance),
+            initialBalance = String.format(Locale.US, "%.2f", loan.currentBalance),
             onConfirm = { newBalance ->
                 viewModel.updateLoanBalance(loan.id, newBalance)
                 loanToUpdateBalance = null
@@ -127,6 +134,55 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             onDismiss = { loanToUpdateBalance = null }
         )
     }
+
+    loanToView?.let { loan ->
+        // Fresh ideas are generated each time a loan is opened.
+        val ideas = remember(loan) { viewModel.generateRepaymentIdeas(loan.currentBalance) }
+        RepaymentIdeasDialog(
+            loan = loan,
+            ideas = ideas,
+            onDismiss = { loanToView = null }
+        )
+    }
+}
+
+@Composable
+fun RepaymentIdeasDialog(
+    loan: Loan,
+    ideas: List<RepaymentIdea>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(loan.name) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Remaining balance", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    "₹${String.format(Locale.US, "%.2f", loan.currentBalance)}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Ideas to repay earlier", style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                ideas.forEach { idea ->
+                    Text(idea.title, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        idea.detail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 @Composable

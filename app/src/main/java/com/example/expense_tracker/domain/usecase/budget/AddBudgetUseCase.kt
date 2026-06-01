@@ -7,6 +7,9 @@ import java.time.YearMonth
 class AddBudgetUseCase(private val budgetRepository: IBudgetRepository) {
     suspend operator fun invoke(categoryId: Long, monthlyLimit: Double, monthYear: YearMonth): Long {
         require(monthlyLimit > 0) { "Monthly limit must be greater than 0" }
+        require(budgetRepository.getByCategoryAndMonth(categoryId, monthYear) == null) {
+            "A budget already exists for this category and month"
+        }
         return budgetRepository.add(Budget(categoryId = categoryId, monthlyLimit = monthlyLimit, monthYear = monthYear))
     }
 }

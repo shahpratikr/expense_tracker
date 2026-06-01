@@ -17,9 +17,11 @@ class GetBudgetWithSpentUseCase(
 ) {
     suspend operator fun invoke(categoryId: Long, monthYear: YearMonth): BudgetWithSpent? {
         val budget = budgetRepository.getByCategoryAndMonth(categoryId, monthYear) ?: return null
-        val allExpenses = expenseRepository.getAll().first()
-        val spent = allExpenses
-            .filter { it.categoryId == categoryId && it.date.year == monthYear.year && it.date.monthValue == monthYear.monthValue }
+        val monthExpenses = expenseRepository
+            .getByDateRange(monthYear.atDay(1), monthYear.atEndOfMonth())
+            .first()
+        val spent = monthExpenses
+            .filter { it.categoryId == categoryId }
             .sumOf { it.amount }
         return BudgetWithSpent(budget = budget, spent = spent)
     }

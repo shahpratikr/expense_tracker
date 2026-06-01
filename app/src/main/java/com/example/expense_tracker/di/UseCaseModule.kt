@@ -17,10 +17,12 @@ import com.example.expense_tracker.domain.usecase.expense.AddExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.DeleteExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.EditExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.FilterExpensesByDateUseCase
+import com.example.expense_tracker.domain.usecase.expense.GetExpenseByIdUseCase
 import com.example.expense_tracker.domain.usecase.expense.GetExpensesUseCase
 import com.example.expense_tracker.domain.usecase.loan.AddLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.DeleteLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.EditLoanUseCase
+import com.example.expense_tracker.domain.usecase.loan.GenerateRepaymentIdeasUseCase
 import com.example.expense_tracker.domain.usecase.loan.GetLoansUseCase
 import com.example.expense_tracker.domain.usecase.loan.UpdateLoanBalanceUseCase
 import dagger.Module
@@ -43,6 +45,12 @@ object UseCaseModule {
     @Provides
     fun provideAddExpenseUseCase(repository: IExpenseRepository): AddExpenseUseCase {
         return AddExpenseUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetExpenseByIdUseCase(repository: IExpenseRepository): GetExpenseByIdUseCase {
+        return GetExpenseByIdUseCase(repository)
     }
 
     @Singleton
@@ -148,5 +156,11 @@ object UseCaseModule {
     @Provides
     fun provideGetMonthlySpendingUseCase(repository: IExpenseRepository): GetMonthlySpendingUseCase {
         return GetMonthlySpendingUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGenerateRepaymentIdeasUseCase(): GenerateRepaymentIdeasUseCase {
+        return GenerateRepaymentIdeasUseCase()
     }
 }

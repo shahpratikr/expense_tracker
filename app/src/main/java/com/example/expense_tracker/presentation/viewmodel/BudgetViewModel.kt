@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.expense_tracker.domain.model.Budget
 import com.example.expense_tracker.domain.usecase.budget.AddBudgetUseCase
+import com.example.expense_tracker.domain.usecase.budget.BudgetWithSpent
 import com.example.expense_tracker.domain.usecase.budget.DeleteBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.EditBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.GetBudgetsUseCase
@@ -18,7 +19,7 @@ import java.time.YearMonth
 import javax.inject.Inject
 
 data class BudgetUiState(
-    val budgets: List<Budget> = emptyList(),
+    val budgets: List<BudgetWithSpent> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -50,8 +51,12 @@ class BudgetViewModel @Inject constructor(
                     )
                 }
                 .collect { budgets ->
+                    val budgetsWithSpent = budgets.map { budget ->
+                        val spent = getBudgetWithSpentUseCase(budget.categoryId, budget.monthYear)?.spent ?: 0.0
+                        BudgetWithSpent(budget = budget, spent = spent)
+                    }
                     _uiState.value = _uiState.value.copy(
-                        budgets = budgets,
+                        budgets = budgetsWithSpent,
                         isLoading = false
                     )
                 }

@@ -7,6 +7,7 @@ import com.example.expense_tracker.domain.usecase.expense.AddExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.DeleteExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.EditExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.FilterExpensesByDateUseCase
+import com.example.expense_tracker.domain.usecase.expense.GetExpenseByIdUseCase
 import com.example.expense_tracker.domain.usecase.expense.GetExpensesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ data class ExpenseUiState(
 @HiltViewModel
 class ExpenseViewModel @Inject constructor(
     private val getExpensesUseCase: GetExpensesUseCase,
+    private val getExpenseByIdUseCase: GetExpenseByIdUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
     private val editExpenseUseCase: EditExpenseUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
@@ -95,6 +97,10 @@ class ExpenseViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    suspend fun getExpenseById(id: Long): Expense? {
+        return getExpenseByIdUseCase(id)
     }
 
     fun filterByDateRange(startDate: LocalDate, endDate: LocalDate) {
