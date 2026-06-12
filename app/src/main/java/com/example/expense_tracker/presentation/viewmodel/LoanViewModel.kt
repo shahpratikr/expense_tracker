@@ -91,7 +91,7 @@ class LoanViewModel @Inject constructor(
     }
 
     // R-3: Initializes the on-device LLM on a background thread; updates LlmState accordingly
-    private fun initLlm() {
+    fun initLlm() {
         if (!llmInferenceHelper.isModelAvailable()) {
             _uiState.value = _uiState.value.copy(llmState = LlmState.Idle)
             return

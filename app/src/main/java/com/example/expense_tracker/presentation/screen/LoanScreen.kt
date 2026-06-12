@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,9 +58,9 @@ import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
 import java.io.File
 import java.util.Locale
 
-// R-3: URL for the one-time Gemma 3 1B INT4 model download (~600 MB)
+// R-3: URL for the one-time DeepSeek-R1-Distill-Qwen-1.5B model download (~1.8 GB, no auth required)
 private const val MODEL_DOWNLOAD_URL =
-    "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma3-1b-it-int4/android/latest/gemma3-1b-it-int4.bin"
+    "https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/deepseek_q8_ekv1280.task"
 
 // R-3: Loan management screen — loan CRUD list plus LLM-powered repayment chat panel
 @Composable
@@ -71,12 +72,13 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     var loanToView by remember { mutableStateOf<Loan?>(null) }
 
     val context = LocalContext.current
-    val modelFile = remember { File(context.filesDir, "gemma3-1b-it-int4.bin") }
+    val modelFile = remember { File(context.getExternalFilesDir(null) ?: context.filesDir, "deepseek_q8_ekv1280.task") }
 
     // R-3: Track download progress for the model download indicator
     var isDownloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var downloadId by remember { mutableStateOf<Long?>(null) }
+    var downloadError by remember { mutableStateOf<String?>(null) }
 
     // R-3: Register a BroadcastReceiver for DownloadManager completion events
     DisposableEffect(Unit) {
@@ -84,18 +86,37 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
                 if (id == downloadId) {
+                    val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    val query = DownloadManager.Query().setFilterById(id)
+                    val cursor = dm.query(query)
+                    var succeeded = false
+                    var reason = ""
+                    if (cursor.moveToFirst()) {
+                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            succeeded = true
+                        } else {
+                            val col = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                            reason = if (col >= 0) "Error code: ${cursor.getInt(col)}" else "Unknown error"
+                        }
+                    }
+                    cursor.close()
                     isDownloading = false
                     downloadProgress = 0f
                     downloadId = null
-                    // Reload the LoanViewModel state so it can pick up the newly downloaded model
-                    viewModel.loadLoans()
+                    if (succeeded) {
+                        viewModel.initLlm()
+                    } else {
+                        downloadError = "Download failed. $reason"
+                    }
                 }
             }
         }
-        context.registerReceiver(
+        ContextCompat.registerReceiver(
+            context,
             receiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_EXPORTED
+            ContextCompat.RECEIVER_EXPORTED
         )
         onDispose { context.unregisterReceiver(receiver) }
     }
@@ -180,15 +201,26 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         }
                     } else {
+                        downloadError?.let { err ->
+                            Text(
+                                err,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
                         Text(
-                            "Enable AI repayment advice by downloading the Gemma 3 model (~600 MB). " +
-                                "This is a one-time download.",
+                            if (downloadError != null)
+                                "Tap below to retry the download (~1.8 GB, requires Wi-Fi recommended)."
+                            else
+                                "Enable AI repayment advice by downloading the AI model (~1.8 GB). This is a one-time download.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
+                                downloadError = null
                                 // R-3: Trigger one-time model download via Android DownloadManager
                                 val dm = context.getSystemService(Context.DOWNLOAD_SERVICE)
                                     as DownloadManager
@@ -196,11 +228,16 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
                                     .setTitle("Gemma 3 AI Model")
                                     .setDescription("Downloading on-device AI model for loan advice")
                                     .setDestinationInExternalFilesDir(
-                                        context, null, "gemma3-1b-it-int4.bin"
+                                        context, null, "deepseek_q8_ekv1280.task"
                                     )
                                     .setNotificationVisibility(
                                         DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
                                     )
+                                    .setAllowedNetworkTypes(
+                                        DownloadManager.Request.NETWORK_WIFI or
+                                            DownloadManager.Request.NETWORK_MOBILE
+                                    )
+                                    .setAllowedOverRoaming(false)
                                 downloadId = dm.enqueue(request)
                                 isDownloading = true
                             },

@@ -27,7 +27,9 @@ interface ILlmInferenceHelper {
 class LlmInferenceHelper(private val context: Context) : ILlmInferenceHelper {
 
     // R-3: Local path where the Gemma 3 1B INT4 model binary is stored after one-time download
-    val modelPath: String = context.filesDir.absolutePath + "/gemma3-1b-it-int4.bin"
+    // DownloadManager writes to external app-specific storage; use the same location here.
+    val modelPath: String = (context.getExternalFilesDir(null)?.absolutePath
+        ?: context.filesDir.absolutePath) + "/deepseek_q8_ekv1280.task"
 
     private var llmInference: Any? = null   // com.google.mediapipe.tasks.genai.llminference.LlmInference
     private var systemPrompt: String = ""
@@ -76,14 +78,22 @@ class LlmInferenceHelper(private val context: Context) : ILlmInferenceHelper {
         }
     }
 
-    // R-3: Sends userMessage to the LLM and returns streamed response tokens as Flow<String>
+    // R-3: Sends userMessage to the LLM and returns streamed response tokens as Flow<String>.
+    // <think>...</think> blocks emitted by DeepSeek reasoning models are stripped before emission.
     override fun generateResponse(userMessage: String): Flow<String> = callbackFlow {
         val inference = llmInference
             ?: throw IllegalStateException("LLM not initialized. Call initialize() first.")
 
         val prompt = "$systemPrompt\n\nUser: $userMessage\nAssistant:"
 
-        // Resolve the listener interface at runtime to avoid compile-time dependency on MediaPipe.
+        // Accumulates all tokens received so far; used to strip <think> blocks that may span tokens.
+        val accumulated = StringBuilder()
+        var lastEmittedLength = 0
+
+        fun visibleText(raw: String): String =
+            raw.replace(Regex("<think>[\\s\\S]*?</think>", RegexOption.IGNORE_CASE), "")
+                .trimStart()
+
         val listenerClass = Class.forName(
             "com.google.mediapipe.tasks.genai.llminference.LlmInference\$LlmInferenceResultListener"
         )
@@ -95,7 +105,12 @@ class LlmInferenceHelper(private val context: Context) : ILlmInferenceHelper {
                 "onResult" -> {
                     val partialResult = args[0] as? String ?: ""
                     val done = args[1] as? Boolean ?: false
-                    trySend(partialResult)
+                    accumulated.append(partialResult)
+                    val visible = visibleText(accumulated.toString())
+                    if (visible.length > lastEmittedLength) {
+                        trySend(visible.substring(lastEmittedLength))
+                        lastEmittedLength = visible.length
+                    }
                     if (done) close()
                 }
                 "onError" -> {
