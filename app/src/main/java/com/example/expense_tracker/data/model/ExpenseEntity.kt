@@ -2,6 +2,7 @@ package com.example.expense_tracker.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,7 +14,8 @@ import androidx.room.PrimaryKey
             childColumns = ["category_id"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index("category_id")]
 )
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true)

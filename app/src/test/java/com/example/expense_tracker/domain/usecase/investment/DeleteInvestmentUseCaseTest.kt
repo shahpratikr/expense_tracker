@@ -30,7 +30,7 @@ class DeleteInvestmentUseCaseTest {
         val investment = Investment(
             id = 1L,
             name = "Gold ETF",
-            assetClass = AssetClass.OTHER,
+            assetClass = AssetClass.STOCKS,
             investedAmount = 10000.0,
             currentValue = 11000.0,
             date = LocalDate.now()

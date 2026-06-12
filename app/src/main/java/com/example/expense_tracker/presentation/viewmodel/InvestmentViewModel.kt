@@ -54,11 +54,12 @@ class InvestmentViewModel @Inject constructor(
         _selectedAssetClass
     ) { investments, gainLoss, filter ->
         val filtered = if (filter == null) investments else investments.filter { it.assetClass == filter }
-        UiState.Success(
+        val result: UiState = UiState.Success(
             investments = filtered,
             gainLossSummary = gainLoss,
             selectedAssetClass = filter
-        ) as UiState
+        )
+        result
     }.catch { e ->
         emit(UiState.Error(e.message ?: "Unknown error"))
     }.stateIn(

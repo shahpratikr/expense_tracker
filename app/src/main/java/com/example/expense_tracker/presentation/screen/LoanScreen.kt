@@ -92,7 +92,11 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
                 }
             }
         }
-        context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        context.registerReceiver(
+            receiver,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            Context.RECEIVER_EXPORTED
+        )
         onDispose { context.unregisterReceiver(receiver) }
     }
 
