@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.expense_tracker.domain.model.ExpenseCategory
 import com.example.expense_tracker.domain.usecase.category.AddCategoryUseCase
+import com.example.expense_tracker.domain.usecase.category.DeleteCategoryUseCase
 import com.example.expense_tracker.domain.usecase.category.GetCategoriesUseCase
+import com.example.expense_tracker.domain.usecase.category.RenameCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,10 +21,13 @@ data class CategoryUiState(
     val error: String? = null
 )
 
+// R-1: ViewModel for custom category management (add, rename, delete)
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val getCategoriesUseCase: GetCategoriesUseCase,
-    private val addCategoryUseCase: AddCategoryUseCase
+    private val addCategoryUseCase: AddCategoryUseCase,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
+    private val renameCategoryUseCase: RenameCategoryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CategoryUiState())
@@ -59,6 +64,34 @@ class CategoryViewModel @Inject constructor(
             } catch (exception: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = exception.message ?: "Failed to add category"
+                )
+            }
+        }
+    }
+
+    // R-1: Delete a custom (non-predefined) category
+    fun deleteCategory(category: ExpenseCategory) {
+        viewModelScope.launch {
+            try {
+                deleteCategoryUseCase(category)
+                loadCategories()
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = exception.message ?: "Failed to delete category"
+                )
+            }
+        }
+    }
+
+    // R-1: Rename a custom (non-predefined) category
+    fun renameCategory(category: ExpenseCategory, newName: String) {
+        viewModelScope.launch {
+            try {
+                renameCategoryUseCase(category, newName)
+                loadCategories()
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = exception.message ?: "Failed to rename category"
                 )
             }
         }

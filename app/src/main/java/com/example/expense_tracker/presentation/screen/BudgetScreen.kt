@@ -55,6 +55,7 @@ private val monthLabelFormatter = DateTimeFormatter.ofPattern("MMMM yyyy")
 
 private fun formatCurrency(value: Double): String = "₹" + String.format(Locale.US, "%.2f", value)
 
+// R-2: Budget management screen — monthly budget CRUD, spent vs limit display, overspent indicator
 @Composable
 fun BudgetScreen(
     viewModel: BudgetViewModel = hiltViewModel(),

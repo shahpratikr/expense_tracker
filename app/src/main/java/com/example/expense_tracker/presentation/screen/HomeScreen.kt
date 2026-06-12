@@ -19,7 +19,9 @@ fun HomeScreen(
     onCategoryManagementClick: () -> Unit = {},
     onDashboardClick: () -> Unit = {},
     onBudgetClick: () -> Unit = {},
-    onLoanClick: () -> Unit = {}
+    onLoanClick: () -> Unit = {},
+    // R-4: Navigate to investment tracking
+    onInvestmentClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -76,6 +78,16 @@ fun HomeScreen(
                     .padding(vertical = 8.dp)
             ) {
                 Text("Loans")
+            }
+
+            // R-4: Investments navigation button
+            Button(
+                onClick = onInvestmentClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text("Investments")
             }
         }
     }

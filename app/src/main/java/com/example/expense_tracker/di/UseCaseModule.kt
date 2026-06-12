@@ -3,7 +3,15 @@ package com.example.expense_tracker.di
 import com.example.expense_tracker.domain.repository.IBudgetRepository
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
 import com.example.expense_tracker.domain.repository.IExpenseRepository
+import com.example.expense_tracker.domain.repository.IInvestmentRepository
 import com.example.expense_tracker.domain.repository.ILoanRepository
+import com.example.expense_tracker.domain.usecase.investment.AddInvestmentUseCase
+import com.example.expense_tracker.domain.usecase.investment.DeleteInvestmentUseCase
+import com.example.expense_tracker.domain.usecase.investment.EditInvestmentUseCase
+import com.example.expense_tracker.domain.usecase.investment.GetInvestmentGainLossUseCase
+import com.example.expense_tracker.domain.usecase.investment.GetInvestmentsByAssetClassUseCase
+import com.example.expense_tracker.domain.usecase.investment.GetInvestmentsUseCase
+import com.example.expense_tracker.domain.usecase.investment.UpdateInvestmentValueUseCase
 import com.example.expense_tracker.domain.usecase.budget.AddBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.DeleteBudgetUseCase
 import com.example.expense_tracker.domain.usecase.budget.EditBudgetUseCase
@@ -11,8 +19,12 @@ import com.example.expense_tracker.domain.usecase.budget.GetBudgetsUseCase
 import com.example.expense_tracker.domain.usecase.budget.GetBudgetWithSpentUseCase
 import com.example.expense_tracker.domain.usecase.category.AddCategoryUseCase
 import com.example.expense_tracker.domain.usecase.category.CreatePredefinedCategoriesUseCase
+import com.example.expense_tracker.domain.usecase.category.DeleteCategoryUseCase
 import com.example.expense_tracker.domain.usecase.category.GetCategoriesUseCase
+import com.example.expense_tracker.domain.usecase.category.RenameCategoryUseCase
+import com.example.expense_tracker.domain.usecase.dashboard.GetBudgetHeadroomUseCase
 import com.example.expense_tracker.domain.usecase.dashboard.GetMonthlySpendingUseCase
+import com.example.expense_tracker.domain.usecase.dashboard.GetTotalLoanBalanceUseCase
 import com.example.expense_tracker.domain.usecase.expense.AddExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.DeleteExpenseUseCase
 import com.example.expense_tracker.domain.usecase.expense.EditExpenseUseCase
@@ -89,6 +101,19 @@ object UseCaseModule {
         return CreatePredefinedCategoriesUseCase(repository)
     }
 
+    // R-1: Category rename and delete use cases
+    @Singleton
+    @Provides
+    fun provideDeleteCategoryUseCase(repository: IExpenseCategoryRepository): DeleteCategoryUseCase {
+        return DeleteCategoryUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideRenameCategoryUseCase(repository: IExpenseCategoryRepository): RenameCategoryUseCase {
+        return RenameCategoryUseCase(repository)
+    }
+
     @Singleton
     @Provides
     fun provideGetBudgetsUseCase(repository: IBudgetRepository): GetBudgetsUseCase {
@@ -158,9 +183,69 @@ object UseCaseModule {
         return GetMonthlySpendingUseCase(repository)
     }
 
+    // R-5: Dashboard use case — total outstanding loan balance
+    @Singleton
+    @Provides
+    fun provideGetTotalLoanBalanceUseCase(repository: ILoanRepository): GetTotalLoanBalanceUseCase {
+        return GetTotalLoanBalanceUseCase(repository)
+    }
+
+    // R-5: Dashboard use case — remaining budget headroom for current month
+    @Singleton
+    @Provides
+    fun provideGetBudgetHeadroomUseCase(
+        budgetRepository: IBudgetRepository,
+        expenseRepository: IExpenseRepository
+    ): GetBudgetHeadroomUseCase {
+        return GetBudgetHeadroomUseCase(budgetRepository, expenseRepository)
+    }
+
     @Singleton
     @Provides
     fun provideGenerateRepaymentIdeasUseCase(): GenerateRepaymentIdeasUseCase {
         return GenerateRepaymentIdeasUseCase()
+    }
+
+    // R-4: Investment use case providers
+    @Singleton
+    @Provides
+    fun provideGetInvestmentsUseCase(repository: IInvestmentRepository): GetInvestmentsUseCase {
+        return GetInvestmentsUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideAddInvestmentUseCase(repository: IInvestmentRepository): AddInvestmentUseCase {
+        return AddInvestmentUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideEditInvestmentUseCase(repository: IInvestmentRepository): EditInvestmentUseCase {
+        return EditInvestmentUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideDeleteInvestmentUseCase(repository: IInvestmentRepository): DeleteInvestmentUseCase {
+        return DeleteInvestmentUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetInvestmentsByAssetClassUseCase(repository: IInvestmentRepository): GetInvestmentsByAssetClassUseCase {
+        return GetInvestmentsByAssetClassUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideUpdateInvestmentValueUseCase(repository: IInvestmentRepository): UpdateInvestmentValueUseCase {
+        return UpdateInvestmentValueUseCase(repository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetInvestmentGainLossUseCase(repository: IInvestmentRepository): GetInvestmentGainLossUseCase {
+        return GetInvestmentGainLossUseCase(repository)
     }
 }

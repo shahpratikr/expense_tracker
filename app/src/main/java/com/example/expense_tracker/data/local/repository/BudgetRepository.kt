@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
+// R-2: Data-layer implementation; transforms BudgetEntity ↔ Budget domain model
 class BudgetRepository(private val budgetDao: BudgetDao) : IBudgetRepository {
     private val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
 

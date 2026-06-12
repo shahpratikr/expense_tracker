@@ -4,6 +4,7 @@ import com.example.expense_tracker.domain.model.Budget
 import com.example.expense_tracker.domain.repository.IBudgetRepository
 import java.time.YearMonth
 
+// R-2: Use case — set a monthly budget for a category; rejects duplicates and zero/negative limits
 class AddBudgetUseCase(private val budgetRepository: IBudgetRepository) {
     suspend operator fun invoke(categoryId: Long, monthlyLimit: Double, monthYear: YearMonth): Long {
         require(monthlyLimit > 0) { "Monthly limit must be greater than 0" }

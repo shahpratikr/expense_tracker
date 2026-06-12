@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import java.time.YearMonth
 import javax.inject.Inject
 
+// R-2: ViewModel for budget management screen — exposes immutable StateFlow<BudgetUiState>
 data class BudgetUiState(
     val budgets: List<BudgetWithSpent> = emptyList(),
     val isLoading: Boolean = false,

@@ -10,6 +10,7 @@ import com.example.expense_tracker.presentation.screen.DashboardScreen
 import com.example.expense_tracker.presentation.screen.ExpenseDetailScreen
 import com.example.expense_tracker.presentation.screen.ExpenseListScreen
 import com.example.expense_tracker.presentation.screen.HomeScreen
+import com.example.expense_tracker.presentation.screen.InvestmentScreen
 import com.example.expense_tracker.presentation.screen.LoanScreen
 
 object NavRoutes {
@@ -21,6 +22,8 @@ object NavRoutes {
     const val LOAN = "loan"
     const val DASHBOARD = "dashboard"
     const val CATEGORY_MANAGEMENT = "category_management"
+    // R-4: Route for investment tracking screen
+    const val INVESTMENT = "investment"
 }
 
 @Composable
@@ -35,7 +38,9 @@ fun NavGraph(navController: NavHostController) {
                 onCategoryManagementClick = { navController.navigate(NavRoutes.CATEGORY_MANAGEMENT) },
                 onDashboardClick = { navController.navigate(NavRoutes.DASHBOARD) },
                 onBudgetClick = { navController.navigate(NavRoutes.BUDGET) },
-                onLoanClick = { navController.navigate(NavRoutes.LOAN) }
+                onLoanClick = { navController.navigate(NavRoutes.LOAN) },
+                // R-4: Navigate to investment tracking screen
+                onInvestmentClick = { navController.navigate(NavRoutes.INVESTMENT) }
             )
         }
         composable(NavRoutes.EXPENSE_LIST) {
@@ -65,13 +70,21 @@ fun NavGraph(navController: NavHostController) {
         composable(NavRoutes.LOAN) {
             LoanScreen()
         }
+        // R-5: Dashboard screen — all four metrics tappable, each navigates to its detail screen
         composable(NavRoutes.DASHBOARD) {
             DashboardScreen(
-                onSpendingClick = { navController.navigate(NavRoutes.EXPENSE_LIST) }
+                onSpendingClick = { navController.navigate(NavRoutes.EXPENSE_LIST) },
+                onLoanClick = { navController.navigate(NavRoutes.LOAN) },
+                onInvestmentClick = { navController.navigate(NavRoutes.INVESTMENT) },
+                onBudgetClick = { navController.navigate(NavRoutes.BUDGET) }
             )
         }
         composable(NavRoutes.CATEGORY_MANAGEMENT) {
             CategoryManagementScreen()
+        }
+        // R-4: Investment tracking screen route
+        composable(NavRoutes.INVESTMENT) {
+            InvestmentScreen()
         }
     }
 }

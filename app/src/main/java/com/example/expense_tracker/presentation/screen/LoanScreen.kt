@@ -1,5 +1,11 @@
 package com.example.expense_tracker.presentation.screen
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,21 +23,26 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -40,9 +51,17 @@ import com.example.expense_tracker.domain.model.Loan
 import com.example.expense_tracker.domain.usecase.loan.RepaymentIdea
 import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.component.LoanCard
+import com.example.expense_tracker.presentation.component.LoanChatPanel
+import com.example.expense_tracker.presentation.viewmodel.LlmState
 import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
+import java.io.File
 import java.util.Locale
 
+// R-3: URL for the one-time Gemma 3 1B INT4 model download (~600 MB)
+private const val MODEL_DOWNLOAD_URL =
+    "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma3-1b-it-int4/android/latest/gemma3-1b-it-int4.bin"
+
+// R-3: Loan management screen — loan CRUD list plus LLM-powered repayment chat panel
 @Composable
 fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -50,6 +69,32 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     var loanToEdit by remember { mutableStateOf<Loan?>(null) }
     var loanToUpdateBalance by remember { mutableStateOf<Loan?>(null) }
     var loanToView by remember { mutableStateOf<Loan?>(null) }
+
+    val context = LocalContext.current
+    val modelFile = remember { File(context.filesDir, "gemma3-1b-it-int4.bin") }
+
+    // R-3: Track download progress for the model download indicator
+    var isDownloading by remember { mutableStateOf(false) }
+    var downloadProgress by remember { mutableFloatStateOf(0f) }
+    var downloadId by remember { mutableStateOf<Long?>(null) }
+
+    // R-3: Register a BroadcastReceiver for DownloadManager completion events
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+                if (id == downloadId) {
+                    isDownloading = false
+                    downloadProgress = 0f
+                    downloadId = null
+                    // Reload the LoanViewModel state so it can pick up the newly downloaded model
+                    viewModel.loadLoans()
+                }
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        onDispose { context.unregisterReceiver(receiver) }
+    }
 
     uiState.error?.let { message ->
         ErrorDialog(message = message, onDismiss = { viewModel.clearError() })
@@ -65,34 +110,115 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             }
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (uiState.loans.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No loans. Tap + to add one.")
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    items(uiState.loans) { loan ->
-                        LoanCard(
-                            loan = loan,
-                            onEdit = { loanToEdit = loan },
-                            onDelete = { viewModel.deleteLoan(loan) },
-                            onUpdateBalance = { loanToUpdateBalance = loan },
-                            onClick = { loanToView = loan }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+            // R-3: Loan list section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    uiState.loans.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No loans. Tap + to add one.")
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            items(uiState.loans) { loan ->
+                                LoanCard(
+                                    loan = loan,
+                                    onEdit = { loanToEdit = loan },
+                                    onDelete = { viewModel.deleteLoan(loan) },
+                                    onUpdateBalance = { loanToUpdateBalance = loan },
+                                    onClick = { loanToView = loan }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
                     }
                 }
+            }
+
+            Divider()
+
+            // R-3: Model download section — shown when model is not yet on device
+            if (uiState.llmState is LlmState.Idle && !modelFile.exists()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    if (isDownloading) {
+                        Text(
+                            "Downloading AI model...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        if (downloadProgress > 0f) {
+                            LinearProgressIndicator(
+                                progress = downloadProgress,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Text(
+                            "Enable AI repayment advice by downloading the Gemma 3 model (~600 MB). " +
+                                "This is a one-time download.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                // R-3: Trigger one-time model download via Android DownloadManager
+                                val dm = context.getSystemService(Context.DOWNLOAD_SERVICE)
+                                    as DownloadManager
+                                val request = DownloadManager.Request(Uri.parse(MODEL_DOWNLOAD_URL))
+                                    .setTitle("Gemma 3 AI Model")
+                                    .setDescription("Downloading on-device AI model for loan advice")
+                                    .setDestinationInExternalFilesDir(
+                                        context, null, "gemma3-1b-it-int4.bin"
+                                    )
+                                    .setNotificationVisibility(
+                                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                                    )
+                                downloadId = dm.enqueue(request)
+                                isDownloading = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Download AI Model")
+                        }
+                    }
+                }
+            }
+
+            // R-3: LLM chat panel — visible when model is loading, ready, generating, or in error
+            if (uiState.llmState !is LlmState.Idle || modelFile.exists()) {
+                LoanChatPanel(
+                    llmState = uiState.llmState,
+                    chatMessages = uiState.chatMessages,
+                    streamingResponse = uiState.streamingResponse,
+                    onSendMessage = { viewModel.sendMessage(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
             }
         }
     }
@@ -142,7 +268,6 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     }
 
     loanToView?.let { loan ->
-        // Fresh ideas are generated each time a loan is opened.
         val ideas = remember(loan) { viewModel.generateRepaymentIdeas(loan) }
         RepaymentIdeasDialog(
             loan = loan,
@@ -152,6 +277,7 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     }
 }
 
+// R-3: Dialog showing rule-based repayment ideas for a selected loan
 @Composable
 fun RepaymentIdeasDialog(
     loan: Loan,
@@ -200,6 +326,7 @@ fun RepaymentIdeasDialog(
     )
 }
 
+// R-3: Form dialog for adding or editing a loan with all fields
 @Composable
 fun LoanFormDialog(
     title: String,
@@ -284,6 +411,7 @@ fun LoanFormDialog(
     )
 }
 
+// R-3: Dialog for manually updating the current balance of a loan after a payment
 @Composable
 fun UpdateBalanceDialog(
     loanName: String,

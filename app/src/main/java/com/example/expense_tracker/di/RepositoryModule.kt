@@ -4,10 +4,12 @@ import com.example.expense_tracker.data.local.database.FinanceDatabase
 import com.example.expense_tracker.data.local.repository.BudgetRepository
 import com.example.expense_tracker.data.local.repository.ExpenseCategoryRepository
 import com.example.expense_tracker.data.local.repository.ExpenseRepository
+import com.example.expense_tracker.data.local.repository.InvestmentRepository
 import com.example.expense_tracker.data.local.repository.LoanRepository
 import com.example.expense_tracker.domain.repository.IBudgetRepository
 import com.example.expense_tracker.domain.repository.IExpenseCategoryRepository
 import com.example.expense_tracker.domain.repository.IExpenseRepository
+import com.example.expense_tracker.domain.repository.IInvestmentRepository
 import com.example.expense_tracker.domain.repository.ILoanRepository
 import dagger.Module
 import dagger.Provides
@@ -41,5 +43,12 @@ object RepositoryModule {
     @Provides
     fun provideLoanRepository(database: FinanceDatabase): ILoanRepository {
         return LoanRepository(database.loanDao())
+    }
+
+    // R-4: Provides singleton InvestmentRepository bound to IInvestmentRepository
+    @Singleton
+    @Provides
+    fun provideInvestmentRepository(database: FinanceDatabase): IInvestmentRepository {
+        return InvestmentRepository(database.investmentDao())
     }
 }

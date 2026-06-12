@@ -24,6 +24,24 @@ object DatabaseModule {
         }
     }
 
+    // R-4: v3 adds the investments table for investment tracking
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS investments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    name TEXT NOT NULL,
+                    asset_class TEXT NOT NULL,
+                    invested_amount REAL NOT NULL,
+                    current_value REAL NOT NULL,
+                    date TEXT NOT NULL
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
     @Singleton
     @Provides
     fun provideFinanceDatabase(
@@ -33,6 +51,6 @@ object DatabaseModule {
             context,
             FinanceDatabase::class.java,
             "finance_database"
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
 }

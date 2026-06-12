@@ -6,11 +6,13 @@ import com.example.expense_tracker.domain.repository.IExpenseRepository
 import kotlinx.coroutines.flow.first
 import java.time.YearMonth
 
+// R-2: Result model — pairs a Budget with the actual amount spent in that month/category
 data class BudgetWithSpent(
     val budget: Budget,
     val spent: Double
 )
 
+// R-2: Use case — calculate actual spending vs budget limit for a given category and month
 class GetBudgetWithSpentUseCase(
     private val budgetRepository: IBudgetRepository,
     private val expenseRepository: IExpenseRepository
