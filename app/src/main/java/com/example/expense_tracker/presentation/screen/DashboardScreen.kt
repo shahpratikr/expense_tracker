@@ -101,7 +101,6 @@ fun DashboardScreen(
                     )
 
                     // R-5: Budget headroom metric — tappable, navigates to budget screen
-                    val headroomSign = if (uiState.budgetHeadroom >= 0) "" else ""
                     val headroomColor = if (uiState.budgetHeadroom >= 0)
                         MaterialTheme.colorScheme.tertiary
                     else

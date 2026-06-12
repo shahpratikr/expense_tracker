@@ -92,11 +92,11 @@ Common commands:
 The debug APK is written to:
 
 ```
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/expense_tracker.apk
 ```
 
 Install it by copying to a device and tapping it (enable "install from unknown sources"), or via
-`adb install app/build/outputs/apk/debug/app-debug.apk`.
+`adb install app/build/outputs/apk/expense_tracker.apk`.
 
 ### Network/TLS note for restricted environments
 

@@ -12,10 +12,11 @@ ANDROID_HOME ?= /home/pratik/Android/Sdk
 TLS ?= -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit
 
 GRADLE = JAVA_HOME=$(JAVA_HOME) ANDROID_HOME=$(ANDROID_HOME) ./gradlew
-APK = app/build/outputs/apk/expense_tracker.apk
+APK_DIR  = app/build/outputs/apk
+APK      = $(APK_DIR)/expense_tracker.apk
 
 .DEFAULT_GOAL := help
-.PHONY: help apk release install test lint clean
+.PHONY: help apk release install test lint clean clean-cache
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -23,6 +24,7 @@ help: ## Show available targets
 
 apk: ## Build the APK
 	$(GRADLE) assembleDebug $(TLS)
+	@cp $(APK_DIR)/debug/expense_tracker.apk $(APK)
 	@echo "APK: $(APK)"
 
 release: ## Build the release APK
@@ -39,3 +41,8 @@ lint: ## Run Android lint
 
 clean: ## Remove build outputs
 	$(GRADLE) clean $(TLS)
+
+clean-cache: ## Stop Gradle daemons and clear Gradle caches
+	$(GRADLE) --stop
+	rm -rf $(HOME)/.gradle/caches
+	rm -rf $(HOME)/.gradle/wrapper/dists
