@@ -12,11 +12,11 @@
 - **Hilt** for dependency injection
 - **MVVM** architectural pattern
 
-### On-Device AI
-- **Model**: Gemma 3 1B (INT4 quantized, ~600MB)
-- **Runtime**: MediaPipe LLM Inference API (`com.google.mediapipe:tasks-genai`)
-- **Scope**: Loans screen only — conversational repayment Q&A
-- **Inference**: Fully local after one-time model download; no internet required at runtime
+### Prepayment Calculator
+- **Scope**: Loans screen only — amortization-based prepayment scenario calculator
+- **Implementation**: Pure Kotlin math (no external library); runs fully offline
+- **Inputs**: Lump sum prepayment, annual prepayment, EMI increase per month
+- **Outputs**: New tenure, years saved, interest saved, total interest under new scenario
 
 ### Database
 - **SQLite** via Room ORM
@@ -29,7 +29,7 @@
 - `androidx.lifecycle` — ViewModels, lifecycle awareness
 - `com.google.dagger.hilt` — Dependency injection
 - `kotlinx.coroutines` — Async/await
-- `com.google.mediapipe:tasks-genai` — On-device LLM inference
+- Pure Kotlin math — amortization calculations for loan prepayment scenarios
 
 ---
 
@@ -84,14 +84,14 @@ app/
 │   │   ├── ExpenseListScreen.kt
 │   │   ├── ExpenseDetailScreen.kt
 │   │   ├── BudgetScreen.kt
-│   │   ├── LoanScreen.kt         ← includes LLM chat panel
+│   │   ├── LoanScreen.kt         ← includes prepayment calculator panel
 │   │   ├── InvestmentScreen.kt
 │   │   ├── DashboardScreen.kt
 │   │   └── CategoryManagementScreen.kt
 │   ├── viewmodel/
 │   │   ├── ExpenseViewModel.kt
 │   │   ├── BudgetViewModel.kt
-│   │   ├── LoanViewModel.kt      ← owns LlmInferenceHelper lifecycle
+│   │   ├── LoanViewModel.kt      ← loan CRUD + selected loan for calculator
 │   │   ├── InvestmentViewModel.kt
 │   │   ├── DashboardViewModel.kt
 │   │   └── CategoryViewModel.kt
@@ -100,13 +100,11 @@ app/
 │   │   ├── BudgetCard.kt
 │   │   ├── LoanCard.kt
 │   │   ├── InvestmentCard.kt
-│   │   ├── LoanChatPanel.kt      ← chat UI for LLM interaction
+│   │   ├── PrepaymentCalculatorPanel.kt ← prepayment scenario calculator
 │   │   ├── CategorySelector.kt
 │   │   └── ErrorDialog.kt
 │   └── navigation/
 │       └── NavGraph.kt
-├── ai/
-│   └── LlmInferenceHelper.kt     ← wraps MediaPipe LlmInference, builds system prompt
 └── MainActivity.kt
 ```
 
@@ -185,93 +183,18 @@ STOCKS, MUTUAL_FUNDS, FIXED_DEPOSITS
 - **Database**: Room SQLite setup and migrations
 - **Responsibilities**: Persist and retrieve data
 
-### AI Layer (`ai/`)
-- Sits outside Clean Architecture layers — it is an infrastructure concern, not a domain concern
-- `LlmInferenceHelper` wraps the MediaPipe `LlmInference` object
-- Owned and lifecycle-managed by `LoanViewModel`
-- Receives a list of `Loan` domain models, formats them into a system prompt, and appends user messages
-- Returns streamed response text via a `Flow<String>`
-
 ---
 
-## On-Device LLM Integration
+## Prepayment Calculator
 
-### Setup Steps
+`PrepaymentCalculatorPanel` is a stateless Compose component in the presentation layer. It receives a `Loan?` and uses pure Kotlin amortization math to compute:
 
-**1. Add dependency to `app/build.gradle.kts`:**
-```kotlin
-implementation("com.google.mediapipe:tasks-genai:0.10.22")
-```
+- **Remaining tenure** — months to pay off at current EMI and rate
+- **New tenure** — simulate month-by-month with lump sum, annual prepayment, and EMI increase applied
+- **Interest saved** — difference in total interest paid between baseline and new scenario
+- **Total interest (new)** — total interest under the prepayment scenario
 
-**2. Download the model file on first launch.**
-The model (~600MB) is downloaded once from Google's servers and stored in the app's internal storage. On all subsequent launches, it loads from local storage with no network access.
-
-```kotlin
-// Trigger download on first launch (e.g., in MainActivity or a splash screen)
-val modelPath = context.filesDir.absolutePath + "/gemma3-1b-it-int4.bin"
-if (!File(modelPath).exists()) {
-    // Download from: https://storage.googleapis.com/mediapipe-models/llm_inference/gemma3-1b-it-int4/android/latest/gemma3-1b-it-int4.bin
-    // Show download progress UI — this is the only internet call the app makes
-}
-```
-
-**3. Initialize `LlmInference` with the local model path:**
-```kotlin
-val options = LlmInference.LlmInferenceOptions.builder()
-    .setModelPath(modelPath)
-    .setMaxTokens(1024)
-    .setTopK(40)
-    .setTemperature(0.7f)
-    .setRandomSeed(101)
-    .build()
-val llmInference = LlmInference.createFromOptions(context, options)
-```
-
-**4. Build the system prompt from live loan data:**
-```kotlin
-fun buildSystemPrompt(loans: List<Loan>): String {
-    val loanSummary = loans.joinToString("\n") { loan ->
-        val rate = loan.interestRate?.let { "@ ${it}% p.a." } ?: "(interest rate unknown)"
-        val emi = loan.minimumMonthlyPayment?.let { ", min payment ₹${it}/month" } ?: ""
-        "- ${loan.name}: ₹${loan.currentBalance} balance $rate$emi"
-    }
-    return """
-        You are a personal loan repayment advisor for an Indian user. Currency is ₹ (INR).
-        The user has the following loans:
-        $loanSummary
-
-        Answer only questions about loan repayment strategies using this data.
-        If interest rate is missing for a loan, ask the user to provide it for accurate calculations.
-        Be concise. Do not invent figures not present in the loan data above.
-    """.trimIndent()
-}
-```
-
-**5. Send a user message and stream the response:**
-```kotlin
-llmInference.generateResponseAsync(
-    systemPrompt + "\n\nUser: " + userMessage,
-    object : LlmInference.LlmInferenceResultListener {
-        override fun onResult(partialResult: String, done: Boolean) {
-            // emit partial tokens to StateFlow for streaming UI
-        }
-        override fun onError(error: RuntimeException) {
-            // expose error in ViewModel state
-        }
-    }
-)
-```
-
-### LLM Loading State in LoanViewModel
-```
-LlmState.Idle         — not yet started
-LlmState.Loading      — model initializing (show spinner, hide chat input)
-LlmState.Ready        — model loaded (show chat input)
-LlmState.Generating   — awaiting response (disable send button)
-LlmState.Error(msg)   — initialization or inference failed
-```
-
-The LLM is initialized when `LoanViewModel` is created (i.e., when the Loans screen is first opened). It is released in `onCleared()`.
+No external library is required. All calculations run synchronously on the UI thread (negligible cost for typical loan durations).
 
 ---
 
@@ -279,7 +202,6 @@ The LLM is initialized when `LoanViewModel` is created (i.e., when the Loans scr
 
 - Database is application-scoped singleton
 - All `@HiltViewModel` classes inject use cases, never DAOs directly
-- `LlmInferenceHelper` is injected into `LoanViewModel` as an application-scoped singleton so the model is not reloaded on recomposition
 - Coroutine dispatchers are injected for testability
 
 ---
@@ -305,7 +227,7 @@ Repository methods may throw. ViewModels catch exceptions and expose error messa
 Jetpack Compose respects system theme via `isSystemInDarkTheme()`. Color scheme defined in theme composables, consistent across all screens.
 
 ### Offline-First
-All data in SQLite locally. The only network call the app ever makes is the one-time Gemma model download on first launch. All LLM inference runs fully on-device.
+All data in SQLite locally. No network calls are made at any point. Loan repayment guidance uses a built-in amortization calculator with no external dependencies.
 
 ---
 
@@ -394,15 +316,13 @@ CREATE TABLE investments (
 - Input validation: limit > 0, required fields
 - **Deliverable**: Budget tracking with monthly spent calculation
 
-### Phase 4: Loan Tracking & LLM Integration
+### Phase 4: Loan Tracking & Prepayment Calculator
 - Loan use cases: add, edit, delete, list, update balance
 - Loan list screen with CRUD interface, interest rate and minimum payment fields
-- `LlmInferenceHelper` implementation with system prompt builder
-- One-time model download flow with progress indicator
-- `LoanViewModel` LLM loading state machine
-- `LoanChatPanel` composable: streaming chat UI within Loans screen
+- `PrepaymentCalculatorPanel` composable: input boxes for lump sum, annual prepayment, EMI increase
+- Real-time amortization calculation for new tenure, years saved, interest saved
 - Input validation: name required, balance >= 0, interest rate > 0 if provided
-- **Deliverable**: Complete loan management + conversational AI repayment advisor
+- **Deliverable**: Complete loan management + prepayment scenario calculator
 
 ### Phase 5: Investment Tracking
 - Investment use cases: add, edit, delete, list, update current value, filter by asset class
@@ -415,7 +335,7 @@ CREATE TABLE investments (
 - Dashboard screen: total monthly spending, total loan balance, total investment gain/loss, budget headroom
 - Tappable dashboard metrics navigating to detail screens
 - Error handling UI across app (validation messages, ErrorDialog)
-- Dark mode support for all screens including LLM chat panel
+- Dark mode support for all screens including the prepayment calculator
 - Final navigation and UX refinement
 - **Deliverable**: Complete app with unified dashboard, error handling, dark mode
 
@@ -434,27 +354,26 @@ CREATE TABLE investments (
 - Verify entity ↔ domain model transformations
 
 ### ViewModel Layer (Unit Tests)
-- Mock use cases and `LlmInferenceHelper`
+- Mock use cases
 - Test ViewModel state emission
-- Test LLM loading state transitions
 
 ### UI Layer
 - Manual testing only
 - Verify screens render correctly in light and dark mode
-- Test LLM chat interaction end-to-end on device
+- Test prepayment calculator with various loan inputs end-to-end on device
 
 ---
 
 ## Success Criteria
 
 1. All MVP features (expense, budget, loan, investment, dashboard) fully functional
-2. Offline operation after initial model download; zero network calls during normal use
+2. Fully offline operation; zero network calls at any time
 3. Data persists correctly in SQLite between sessions
-4. LLM loads on the Loans screen and answers free-form repayment questions grounded in real loan data
+4. Prepayment calculator on the Loans screen correctly computes new tenure, years saved, and interest saved from real loan data
 5. Dashboard displays accurate summaries for all four financial domains
 6. Input validation enforces all business rules
 7. Error handling provides user-friendly feedback
-8. Dark mode supported throughout including the chat panel
+8. Dark mode supported throughout including the prepayment calculator
 9. Clean Architecture maintained with clear layer separation
 10. Unit tests cover all domain use cases and ViewModel state transitions
 11. App runs without crashes on Android API 24+ devices

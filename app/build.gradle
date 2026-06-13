@@ -13,8 +13,8 @@ android {
         applicationId 'com.example.expense_tracker'
         minSdk 24
         targetSdk 35
-        versionCode 10
-        versionName '1.9'
+        versionCode 13
+        versionName '1.13'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables {
@@ -106,9 +106,6 @@ dependencies {
     implementation 'com.google.dagger:hilt-android:2.48'
     kapt 'com.google.dagger:hilt-compiler:2.48'
     implementation 'androidx.hilt:hilt-navigation-compose:1.1.0'
-
-    // R-3: MediaPipe LLM Inference API for on-device Gemma 3 1B chat in the Loans screen
-    implementation 'com.google.mediapipe:tasks-genai:0.10.22'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

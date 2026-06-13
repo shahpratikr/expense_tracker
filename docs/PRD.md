@@ -32,20 +32,19 @@ Set and monitor monthly budgets by category.
 - Overspent budgets are visually distinguished from within-limit budgets
 - User can edit or delete budgets
 
-### 3. Loan Tracking with AI Repayment Assistant
-Track loan balances and get AI-powered repayment guidance.
+### 3. Loan Tracking with Prepayment Calculator
+Track loan balances and calculate the impact of prepayments.
 
 **Acceptance Criteria:**
 - User can add a loan with name, current balance (₹), annual interest rate (%), and minimum monthly payment (₹)
 - User can edit or delete loans
 - User can view a list of all active loans
 - User can manually update loan balance as payments are made
-- When the user opens the Loans screen, an on-device LLM (Gemma 3 1B) loads in the background
-- Once the LLM is ready, a chat input appears at the bottom of the Loans screen
-- User can ask free-form questions about loan repayment (e.g., "Which loan should I pay first?", "If I pay ₹3,000 extra per month, when will I be debt-free?")
-- The LLM answers using only the user's actual loan data as context; it does not invent figures
-- If interest rate is missing for a loan, the LLM prompts the user to provide it for accurate calculations
-- LLM responses are displayed inline in the chat interface within the Loans screen
+- Tapping a loan card opens a prepayment calculator panel at the bottom of the Loans screen
+- The calculator shows: remaining balance, interest rate, current EMI, and calculated remaining tenure
+- User can enter lump sum prepayment (₹), annual prepayment (₹), and EMI increase per month (₹) as text inputs
+- The calculator displays in real time: new tenure, years saved, interest saved, and total interest under the new scenario
+- Tapping the same loan card again deselects it and clears the calculator
 
 ### 4. Investment Tracking
 Track investments across asset classes with gain/loss visibility.
@@ -103,21 +102,21 @@ Clean Architecture with three layers:
 - **Async**: Kotlin Coroutines
 - **DI**: Hilt
 - **Pattern**: MVVM
-- **On-device LLM**: Gemma 3 1B via MediaPipe LLM Inference API
+- **Calculations**: Pure Kotlin math for amortization and prepayment scenarios
 - **Currency**: ₹ INR only (fixed at build time, no user configuration)
 
 ---
 
 ## Constraints
 
-- **Offline Only**: No cloud synchronization, no network calls, no telemetry. Internet is used only once for the initial Gemma 3 1B model download (~600MB); all subsequent inference is fully local.
+- **Offline Only**: No cloud synchronization, no network calls, no telemetry. The app is fully offline after installation.
 - **Database**: SQLite only via Room. Unlimited local storage.
 - **Platform**: Android application, minimum API 24, target API 35
 - **Users**: Single-user per installation
 - **Currency**: ₹ INR only. No multi-currency conversion.
 - **Historical Data Only**: No future forecasting, goal planning, or scheduled reminders
 - **Clean Architecture**: Presentation → Domain → Data layer separation enforced
-- **AI Scope**: LLM is used exclusively in the Loans screen. No AI features in expense, budget, or investment screens.
+- **Calculations Only**: Loan repayment guidance is provided through a deterministic prepayment calculator; no AI or LLM features.
 - **Loans are liabilities only**: Loans given to others (receivables) are out of scope
 
 ---
@@ -143,7 +142,7 @@ Clean Architecture with three layers:
 1. All MVP features (expense, budget, loan, investment, dashboard) are fully functional
 2. App operates completely offline after initial model download; no network calls during normal use
 3. Data persists correctly in SQLite between app sessions with unlimited storage
-4. LLM loads on the Loans screen and answers free-form repayment questions using real loan data
+4. Prepayment calculator on the Loans screen computes new tenure, interest saved, and total interest using real loan data
 5. Dashboard displays accurate summaries across all four financial domains
 6. Code follows Clean Architecture principles with clear layer separation
 7. Unit tests cover all domain use cases
