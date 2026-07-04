@@ -4,7 +4,7 @@ description: >
   Use this agent to check whether changed files comply with the
   project's CLAUDE.md conventions. Pass changed_files as a list
   of file paths. Returns violations list or "no violations".
-model: haiku
+model: sonnet
 allowedTools:
   - Read
   - Glob

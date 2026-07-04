@@ -1,7 +1,7 @@
 ---
 description: Validate a completed phase against spec, conventions, and tests
 argument-hint: "<phase-num>"
-model: sonnet
+model: haiku
 allowed-tools: Agent, Bash(git diff:*), Bash(git log:*)
 ---
 
@@ -16,8 +16,12 @@ Phase number: $ARGUMENTS
 
 Evaluate these before spawning agents:
 ```
-Changed files:    !git diff --name-only HEAD~1
-Last commit:      !git log --oneline -1
+Recent commits:   !git log --oneline -10
+```
+
+Find the commit(s) belonging to Phase $ARGUMENTS: look for a commit message starting with "Phase $ARGUMENTS:" (the format build-phase.md uses). If the phase spans multiple commits, diff from the commit immediately before the first Phase $ARGUMENTS commit through HEAD. If exactly one commit matches, diff that commit against its parent. Then run:
+```
+Changed files:    !git diff --name-only <range-determined-above>
 ```
 
 Collect the changed files list into a variable — pass it explicitly to each agent rather than re-running the git command inside agent prompts.

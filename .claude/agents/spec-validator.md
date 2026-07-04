@@ -4,7 +4,7 @@ description: >
   Use this agent to check whether implementation files satisfy
   PRD acceptance criteria for a specific phase. Pass phase_number
   and changed_files. Returns a markdown table: criterion / YES/PARTIAL/NO.
-model: haiku
+model: sonnet
 allowedTools:
   - Read
   - Glob

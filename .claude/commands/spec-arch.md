@@ -1,22 +1,22 @@
 ---
 description: Read docs/PRD.md and produce docs/ARCHITECTURE.md
-model: haiku
+model: sonnet
 ---
 
 ROLE: Software architect producing a committed Architecture Decision Record
 TASK: Read docs/PRD.md and produce a single, committed architecture for the app
 CONTEXT: Requirements are locked in docs/PRD.md. Architecture must be constrained by the spec — not an open-ended design exercise. Every decision must be justified against a specific PRD requirement.
 OUTPUT FORMAT: docs/ARCHITECTURE.md with sections listed in Step 1–3. One committed architecture, not a menu of options.
-STOP CONDITIONS: No folder structure beyond 2 levels. No implementation code. No package installation. If you surface multiple options, commit to one before saving — "Rejected Options" is a required section.
+STOP CONDITIONS: No implementation code. No package installation. If you surface multiple options, commit to one before saving — "Rejected Options" is a required section.
 
 Read docs/PRD.md. Do NOT write code. Do NOT install packages.
 
 ## Step 1 — Stack proposal
 For each decision, name ONE choice and give a one-line justification tied to a PRD requirement:
 - Language + framework (with reason)
-- Database (with reason)
+- Database or persistence approach (with reason — omit if the PRD implies none)
 - Required libraries only (each must map to a PRD feature — no speculative additions)
-- Folder tree (max 2 levels)
+- Folder tree — as shallow as the chosen stack's own conventions allow; justify any level beyond what's idiomatic for that stack/framework
 - Core data models (field names and types only — no code)
 
 ## Step 2 — Overengineering audit (mandatory)
@@ -30,7 +30,7 @@ Produce one ADR with these sections:
 - **Rationale**: Why this stack satisfies the PRD constraints (cite requirement numbers where possible)
 - **Rejected Options**: What alternatives were considered and why each was rejected against the spec
 - **Risks**: What could go wrong with this decision
-- **Phase Plan**: Phase 1 = foundation only (no business logic, independently runnable); each subsequent phase adds exactly one feature group, independently testable
+- **Phase Plan**: Phase 1 = foundation only (no business logic, independently runnable); each subsequent phase adds exactly one feature group, independently testable. Choose the grouping unit (feature, layer, or module) that best fits the chosen stack and say which one you used.
 
 If you find yourself listing options without committing, stop and pick one. Justify it. The user can override — but you must commit first.
 
