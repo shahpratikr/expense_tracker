@@ -30,10 +30,6 @@ class InvestmentRepository(private val investmentDao: InvestmentDao) : IInvestme
     override fun getAll(): Flow<List<Investment>> =
         investmentDao.getAllFlow().map { list -> list.map { it.toDomain() } }
 
-    // R-4: Filter by asset class — passes enum name as string to DAO
-    override fun getByAssetClass(assetClass: AssetClass): Flow<List<Investment>> =
-        investmentDao.getByAssetClassFlow(assetClass.name).map { list -> list.map { it.toDomain() } }
-
     private fun Investment.toEntity() = InvestmentEntity(
         id = id,
         name = name,

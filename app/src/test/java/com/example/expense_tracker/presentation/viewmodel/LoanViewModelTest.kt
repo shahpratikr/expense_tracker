@@ -5,6 +5,7 @@ import com.example.expense_tracker.domain.usecase.loan.AddLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.DeleteLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.EditLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.GetLoansUseCase
+import com.example.expense_tracker.domain.usecase.loan.RecalculateLoanBalancesUseCase
 import com.example.expense_tracker.domain.usecase.loan.UpdateLoanBalanceUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,17 +34,32 @@ class LoanViewModelTest {
     @Mock private lateinit var editLoanUseCase: EditLoanUseCase
     @Mock private lateinit var deleteLoanUseCase: DeleteLoanUseCase
     @Mock private lateinit var updateLoanBalanceUseCase: UpdateLoanBalanceUseCase
+    @Mock private lateinit var recalculateLoanBalancesUseCase: RecalculateLoanBalancesUseCase
 
     private val testDispatcher = StandardTestDispatcher()
 
-    private fun buildViewModel(): LoanViewModel {
+    private fun sampleLoan(id: Long, name: String, balance: Double) = Loan(
+        id = id,
+        name = name,
+        currentBalance = balance,
+        interestRate = 9.0,
+        emiAmount = 500.0,
+        loanStartDate = LocalDate.now(),
+        emiDayOfMonth = 5,
+        lastBalanceUpdateDate = LocalDate.now(),
+        createdAt = LocalDate.now()
+    )
+
+    private suspend fun buildViewModel(): LoanViewModel {
         whenever(getLoansUseCase()).thenReturn(flowOf(emptyList()))
+        whenever(recalculateLoanBalancesUseCase()).thenReturn(emptyList())
         return LoanViewModel(
             getLoansUseCase,
             addLoanUseCase,
             editLoanUseCase,
             deleteLoanUseCase,
-            updateLoanBalanceUseCase
+            updateLoanBalanceUseCase,
+            recalculateLoanBalancesUseCase
         )
     }
 
@@ -67,7 +83,7 @@ class LoanViewModelTest {
 
     @Test
     fun `selectLoan sets selectedLoanId`() = runTest {
-        val loan = Loan(id = 1L, name = "Home", currentBalance = 500000.0, createdAt = LocalDate.now())
+        val loan = sampleLoan(1L, "Home", 500000.0)
         val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -77,7 +93,7 @@ class LoanViewModelTest {
 
     @Test
     fun `selectLoan same loan deselects it`() = runTest {
-        val loan = Loan(id = 1L, name = "Home", currentBalance = 500000.0, createdAt = LocalDate.now())
+        val loan = sampleLoan(1L, "Home", 500000.0)
         val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -87,20 +103,29 @@ class LoanViewModelTest {
     }
 
     @Test
-    fun `addLoan delegates to addLoanUseCase`() = runTest {
-        whenever(addLoanUseCase(any(), any(), any(), any())).thenReturn(1L)
+    fun `loadLoans invokes recalculateLoanBalancesUseCase before loading list`() = runTest {
         val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.addLoan("Car Loan", 10000.0, 9.5, 500.0)
+        verify(recalculateLoanBalancesUseCase).invoke()
+    }
+
+    @Test
+    fun `addLoan delegates to addLoanUseCase`() = runTest {
+        whenever(addLoanUseCase(any(), any(), any(), any(), any(), any())).thenReturn(1L)
+        val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(addLoanUseCase).invoke("Car Loan", 10000.0, 9.5, 500.0)
+        val startDate = LocalDate.now()
+        vm.addLoan("Car Loan", 10000.0, 9.5, 500.0, startDate, 5)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(addLoanUseCase).invoke("Car Loan", 10000.0, 9.5, 500.0, startDate, 5)
     }
 
     @Test
     fun `deleteLoan delegates to deleteLoanUseCase`() = runTest {
-        val loan = Loan(id = 1L, name = "Test", currentBalance = 100.0, createdAt = LocalDate.now())
+        val loan = sampleLoan(1L, "Test", 100.0)
         val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -112,12 +137,12 @@ class LoanViewModelTest {
 
     @Test
     fun `addLoan failure sets error in uiState`() = runTest {
-        whenever(addLoanUseCase(any(), any(), any(), any()))
+        whenever(addLoanUseCase(any(), any(), any(), any(), any(), any()))
             .thenThrow(IllegalArgumentException("Loan name must not be empty"))
         val vm = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.addLoan("", 100.0, 0.0, 0.0)
+        vm.addLoan("", 100.0, 9.0, 500.0, LocalDate.now(), 5)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("Loan name must not be empty", vm.uiState.value.error)

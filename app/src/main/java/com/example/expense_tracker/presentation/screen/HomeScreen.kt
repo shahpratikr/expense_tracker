@@ -13,14 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+// PRD Feature 3: Home screen — entry point navigating to Dashboard, Loans, and Investments
 @Composable
 fun HomeScreen(
-    onExpenseListClick: () -> Unit = {},
-    onCategoryManagementClick: () -> Unit = {},
     onDashboardClick: () -> Unit = {},
-    onBudgetClick: () -> Unit = {},
     onLoanClick: () -> Unit = {},
-    // R-4: Navigate to investment tracking
     onInvestmentClick: () -> Unit = {}
 ) {
     Scaffold(
@@ -36,39 +33,12 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = onExpenseListClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Expenses")
-            }
-
-            Button(
-                onClick = onCategoryManagementClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Categories")
-            }
-
-            Button(
                 onClick = onDashboardClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
                 Text("Dashboard")
-            }
-
-            Button(
-                onClick = onBudgetClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text("Budgets")
             }
 
             Button(
@@ -80,7 +50,6 @@ fun HomeScreen(
                 Text("Loans")
             }
 
-            // R-4: Investments navigation button
             Button(
                 onClick = onInvestmentClick,
                 modifier = Modifier

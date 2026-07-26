@@ -23,11 +23,23 @@ class GetLoansUseCaseTest {
         getLoansUseCase = GetLoansUseCase(loanRepository)
     }
 
+    private fun sampleLoan(id: Long, name: String, balance: Double) = Loan(
+        id = id,
+        name = name,
+        currentBalance = balance,
+        interestRate = 9.0,
+        emiAmount = 500.0,
+        loanStartDate = LocalDate.now(),
+        emiDayOfMonth = 5,
+        lastBalanceUpdateDate = LocalDate.now(),
+        createdAt = LocalDate.now()
+    )
+
     @Test
     fun testGetLoans() = runTest {
         val mockLoans = listOf(
-            Loan(1L, "Car Loan", 5000.0, LocalDate.now()),
-            Loan(2L, "Home Loan", 12000.0, LocalDate.now())
+            sampleLoan(1L, "Car Loan", 5000.0),
+            sampleLoan(2L, "Home Loan", 12000.0)
         )
 
         whenever(loanRepository.getAll()).thenReturn(flowOf(mockLoans))

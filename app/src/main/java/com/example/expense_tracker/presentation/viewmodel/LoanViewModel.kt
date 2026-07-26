@@ -7,6 +7,7 @@ import com.example.expense_tracker.domain.usecase.loan.AddLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.DeleteLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.EditLoanUseCase
 import com.example.expense_tracker.domain.usecase.loan.GetLoansUseCase
+import com.example.expense_tracker.domain.usecase.loan.RecalculateLoanBalancesUseCase
 import com.example.expense_tracker.domain.usecase.loan.UpdateLoanBalanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class LoanUiState(
@@ -29,7 +31,8 @@ class LoanViewModel @Inject constructor(
     private val addLoanUseCase: AddLoanUseCase,
     private val editLoanUseCase: EditLoanUseCase,
     private val deleteLoanUseCase: DeleteLoanUseCase,
-    private val updateLoanBalanceUseCase: UpdateLoanBalanceUseCase
+    private val updateLoanBalanceUseCase: UpdateLoanBalanceUseCase,
+    private val recalculateLoanBalancesUseCase: RecalculateLoanBalancesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoanUiState())
@@ -39,9 +42,18 @@ class LoanViewModel @Inject constructor(
         loadLoans()
     }
 
+    // PRD Feature 1: recalculates balances for elapsed EMI cycles before loading the loan list
     fun loadLoans() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            try {
+                val warnings = recalculateLoanBalancesUseCase()
+                if (warnings.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(error = warnings.joinToString("\n"))
+                }
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(error = exception.message ?: "Failed to recalculate balances")
+            }
             getLoansUseCase()
                 .catch { exception ->
                     _uiState.value = _uiState.value.copy(
@@ -63,10 +75,17 @@ class LoanViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedLoanId = newId)
     }
 
-    fun addLoan(name: String, currentBalance: Double, interestRate: Double, emi: Double) {
+    fun addLoan(
+        name: String,
+        currentBalance: Double,
+        interestRate: Double,
+        emiAmount: Double,
+        loanStartDate: LocalDate,
+        emiDayOfMonth: Int
+    ) {
         viewModelScope.launch {
             try {
-                addLoanUseCase(name, currentBalance, interestRate, emi)
+                addLoanUseCase(name, currentBalance, interestRate, emiAmount, loanStartDate, emiDayOfMonth)
             } catch (exception: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = exception.message ?: "Failed to add loan"

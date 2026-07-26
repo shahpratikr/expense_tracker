@@ -24,7 +24,4 @@ interface LoanDao {
 
     @Query("SELECT * FROM loans ORDER BY created_at DESC")
     fun getAllFlow(): Flow<List<LoanEntity>>
-
-    @Query("DELETE FROM loans WHERE id = :id")
-    suspend fun deleteById(id: Long)
 }

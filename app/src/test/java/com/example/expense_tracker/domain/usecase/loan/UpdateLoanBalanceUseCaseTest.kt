@@ -29,6 +29,11 @@ class UpdateLoanBalanceUseCaseTest {
             id = 1L,
             name = "Car Loan",
             currentBalance = 5000.0,
+            interestRate = 9.0,
+            emiAmount = 500.0,
+            loanStartDate = LocalDate.now(),
+            emiDayOfMonth = 5,
+            lastBalanceUpdateDate = LocalDate.now(),
             createdAt = LocalDate.now()
         )
         whenever(loanRepository.getById(1L)).thenReturn(existing)

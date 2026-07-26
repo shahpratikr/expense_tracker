@@ -22,14 +22,27 @@ class EditLoanUseCaseTest {
         editLoanUseCase = EditLoanUseCase(loanRepository)
     }
 
+    private fun sampleLoan(
+        name: String = "Home Loan",
+        currentBalance: Double = 12000.0,
+        interestRate: Double = 8.0,
+        emiAmount: Double = 500.0,
+        emiDayOfMonth: Int = 5
+    ) = Loan(
+        id = 1L,
+        name = name,
+        currentBalance = currentBalance,
+        interestRate = interestRate,
+        emiAmount = emiAmount,
+        loanStartDate = LocalDate.now(),
+        emiDayOfMonth = emiDayOfMonth,
+        lastBalanceUpdateDate = LocalDate.now(),
+        createdAt = LocalDate.now()
+    )
+
     @Test
     fun testEditLoanWithValidInputs() = runTest {
-        val loan = Loan(
-            id = 1L,
-            name = "Home Loan",
-            currentBalance = 12000.0,
-            createdAt = LocalDate.now()
-        )
+        val loan = sampleLoan()
 
         editLoanUseCase(loan)
 
@@ -38,25 +51,26 @@ class EditLoanUseCaseTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testEditLoanWithBlankName() = runTest {
-        val loan = Loan(
-            id = 1L,
-            name = "",
-            currentBalance = 12000.0,
-            createdAt = LocalDate.now()
-        )
-
-        editLoanUseCase(loan)
+        editLoanUseCase(sampleLoan(name = ""))
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun testEditLoanWithNegativeBalance() = runTest {
-        val loan = Loan(
-            id = 1L,
-            name = "Home Loan",
-            currentBalance = -1.0,
-            createdAt = LocalDate.now()
-        )
+        editLoanUseCase(sampleLoan(currentBalance = -1.0))
+    }
 
-        editLoanUseCase(loan)
+    @Test(expected = IllegalArgumentException::class)
+    fun testEditLoanWithNonPositiveInterestRate() = runTest {
+        editLoanUseCase(sampleLoan(interestRate = 0.0))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testEditLoanWithNonPositiveEmiAmount() = runTest {
+        editLoanUseCase(sampleLoan(emiAmount = 0.0))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testEditLoanWithInvalidEmiDayOfMonth() = runTest {
+        editLoanUseCase(sampleLoan(emiDayOfMonth = 0))
     }
 }

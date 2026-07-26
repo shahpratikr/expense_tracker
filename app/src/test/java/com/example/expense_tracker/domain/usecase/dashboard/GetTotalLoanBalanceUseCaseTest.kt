@@ -12,7 +12,7 @@ import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-// R-5: Unit tests for GetTotalLoanBalanceUseCase
+// PRD Feature 3: Unit tests for GetTotalLoanBalanceUseCase
 class GetTotalLoanBalanceUseCaseTest {
 
     @Mock private lateinit var loanRepository: ILoanRepository
@@ -24,12 +24,23 @@ class GetTotalLoanBalanceUseCaseTest {
         useCase = GetTotalLoanBalanceUseCase(loanRepository)
     }
 
-    // R-5: Sum of all loan balances is returned
+    private fun sampleLoan(id: Long, name: String, balance: Double, interestRate: Double, emiAmount: Double) = Loan(
+        id = id,
+        name = name,
+        currentBalance = balance,
+        interestRate = interestRate,
+        emiAmount = emiAmount,
+        loanStartDate = LocalDate.now(),
+        emiDayOfMonth = 5,
+        lastBalanceUpdateDate = LocalDate.now(),
+        createdAt = LocalDate.now()
+    )
+
     @Test
     fun `returns sum of all loan balances`() = runTest {
         val loans = listOf(
-            Loan(id = 1L, name = "Car", currentBalance = 50000.0, createdAt = LocalDate.now(), interestRate = 9.0, emi = 2000.0),
-            Loan(id = 2L, name = "Home", currentBalance = 300000.0, createdAt = LocalDate.now(), interestRate = 7.5, emi = 15000.0)
+            sampleLoan(1L, "Car", 50000.0, 9.0, 2000.0),
+            sampleLoan(2L, "Home", 300000.0, 7.5, 15000.0)
         )
         whenever(loanRepository.getAll()).thenReturn(flowOf(loans))
 
@@ -38,7 +49,6 @@ class GetTotalLoanBalanceUseCaseTest {
         }
     }
 
-    // R-5: Zero when no loans exist
     @Test
     fun `returns zero when no loans`() = runTest {
         whenever(loanRepository.getAll()).thenReturn(flowOf(emptyList()))

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+// PRD Feature 1: Repository implementing entity <-> domain transforms for the loans table
 class LoanRepository(private val loanDao: LoanDao) : ILoanRepository {
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -38,17 +39,23 @@ class LoanRepository(private val loanDao: LoanDao) : ILoanRepository {
         id = id,
         name = name,
         current_balance = currentBalance,
-        created_at = createdAt.format(dateFormatter),
         interest_rate = interestRate,
-        emi = emi
+        emi_amount = emiAmount,
+        loan_start_date = loanStartDate.format(dateFormatter),
+        emi_day_of_month = emiDayOfMonth,
+        last_balance_update_date = lastBalanceUpdateDate.format(dateFormatter),
+        created_at = createdAt.format(dateFormatter)
     )
 
     private fun LoanEntity.toDomain() = Loan(
         id = id,
         name = name,
         currentBalance = current_balance,
-        createdAt = LocalDate.parse(created_at, dateFormatter),
         interestRate = interest_rate,
-        emi = emi
+        emiAmount = emi_amount,
+        loanStartDate = LocalDate.parse(loan_start_date, dateFormatter),
+        emiDayOfMonth = emi_day_of_month,
+        lastBalanceUpdateDate = LocalDate.parse(last_balance_update_date, dateFormatter),
+        createdAt = LocalDate.parse(created_at, dateFormatter)
     )
 }

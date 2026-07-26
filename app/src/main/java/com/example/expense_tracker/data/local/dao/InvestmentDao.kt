@@ -28,8 +28,4 @@ interface InvestmentDao {
     // R-4: Observe all investments, ordered newest first
     @Query("SELECT * FROM investments ORDER BY date DESC")
     fun getAllFlow(): Flow<List<InvestmentEntity>>
-
-    // R-4: Observe investments filtered by asset class
-    @Query("SELECT * FROM investments WHERE asset_class = :assetClass ORDER BY date DESC")
-    fun getByAssetClassFlow(assetClass: String): Flow<List<InvestmentEntity>>
 }

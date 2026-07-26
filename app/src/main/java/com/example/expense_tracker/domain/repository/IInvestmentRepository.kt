@@ -1,6 +1,5 @@
 package com.example.expense_tracker.domain.repository
 
-import com.example.expense_tracker.domain.model.AssetClass
 import com.example.expense_tracker.domain.model.Investment
 import kotlinx.coroutines.flow.Flow
 
@@ -20,7 +19,4 @@ interface IInvestmentRepository {
 
     // R-4: Observe all investments as a live Flow
     fun getAll(): Flow<List<Investment>>
-
-    // R-4: Observe investments filtered by asset class
-    fun getByAssetClass(assetClass: AssetClass): Flow<List<Investment>>
 }

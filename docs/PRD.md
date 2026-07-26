@@ -5,48 +5,28 @@
 
 ## Problem
 
-A personal user needs a single offline Android app to track daily expenses, manage loan balances, monitor budgets, track investments across asset classes, and get AI-assisted loan repayment guidance — without relying on cloud services or internet connectivity. Existing solutions either require internet access, lack investment tracking, or provide no intelligent analysis of local financial data.
+A personal user needs a single offline Android app to manage loan balances, track investments across asset classes, and get AI-assisted loan repayment guidance — without relying on cloud services or internet connectivity. Existing solutions either require internet access, lack investment tracking, or provide no intelligent analysis of local financial data.
 
 ---
 
 ## MVP Features
 
-### 1. Expense Tracking
-Track daily expenses with flexible categorization.
+### 1. Loan Tracking with Automatic Balance Updates and Prepayment Calculator
+Track loan balances that update automatically based on the EMI schedule, and calculate the impact of prepayments.
 
 **Acceptance Criteria:**
-- User can add an expense with amount (₹), date, and optional category
-- User can edit or delete existing expenses
-- User can view a list of all expenses filtered by date range (day, week, month, custom)
-- Expenses can be categorized or left uncategorized
-- Predefined expense categories exist: Food, Transport, Entertainment, Utilities, Healthcare, Other
-- User can create, rename, and delete custom categories
-
-### 2. Budget Management
-Set and monitor monthly budgets by category.
-
-**Acceptance Criteria:**
-- User can set a monthly budget for any category
-- Budget limits are tracked per calendar month
-- User can view actual spending vs. budget for the current month as text comparison (e.g., "Budget: ₹5,000 | Spent: ₹6,200")
-- Overspent budgets are visually distinguished from within-limit budgets
-- User can edit or delete budgets
-
-### 3. Loan Tracking with Prepayment Calculator
-Track loan balances and calculate the impact of prepayments.
-
-**Acceptance Criteria:**
-- User can add a loan with name, current balance (₹), annual interest rate (%), and minimum monthly payment (₹)
+- User can add a loan with name, current balance (₹), annual interest rate (%), fixed EMI amount (₹), loan start date, and EMI date (day of month)
 - User can edit or delete loans
 - User can view a list of all active loans
-- User can manually update loan balance as payments are made
+- When the Loans screen is opened, the app automatically recalculates each loan's balance by applying one amortization cycle (EMI amount minus interest accrued) for every EMI date that has elapsed since the balance was last updated
+- User can still manually override/correct a loan's balance (e.g. for a missed or extra payment)
 - Tapping a loan card opens a prepayment calculator panel at the bottom of the Loans screen
 - The calculator shows: remaining balance, interest rate, current EMI, and calculated remaining tenure
 - User can enter lump sum prepayment (₹), annual prepayment (₹), and EMI increase per month (₹) as text inputs
 - The calculator displays in real time: new tenure, years saved, interest saved, and total interest under the new scenario
 - Tapping the same loan card again deselects it and clears the calculator
 
-### 4. Investment Tracking
+### 2. Investment Tracking
 Track investments across asset classes with gain/loss visibility.
 
 **Acceptance Criteria:**
@@ -57,14 +37,14 @@ Track investments across asset classes with gain/loss visibility.
 - Investment list displays invested amount, current value, and calculated gain/loss (₹ and %)
 - Investments are grouped or filterable by asset class
 
-### 5. Dashboard
+### 3. Dashboard
 Quick overview of financial summary on a single screen.
 
 **Acceptance Criteria:**
-- Dashboard displays: total monthly spending, total active loan balance, total investment gain/loss, and remaining budget headroom for current month
+- Dashboard displays: total active loan balance and total investment gain/loss
 - Dashboard is accessible via button click from main screen
 - Each dashboard metric is tappable and navigates to the corresponding detail screen
-- Dashboard data updates immediately when expenses, loans, or investments are added or edited
+- Dashboard data updates immediately when loans or investments are added or edited, and reflects the latest automatic loan balance recalculation
 
 ---
 
@@ -72,10 +52,7 @@ Quick overview of financial summary on a single screen.
 
 ### Domain Model
 ```
-Expense: id, amount, category_id (optional), date
-ExpenseCategory: id, name, is_predefined
-Budget: id, category_id, monthly_limit, month_year
-Loan: id, name, current_balance, interest_rate (optional), minimum_monthly_payment (optional), created_at
+Loan: id, name, current_balance, interest_rate, emi_amount, loan_start_date, emi_day_of_month, last_balance_update_date, created_at
 Investment: id, name, asset_class, invested_amount, current_value, date
 ```
 
@@ -83,10 +60,7 @@ Investment: id, name, asset_class, invested_amount, current_value, date
 `STOCKS`, `MUTUAL_FUNDS`, `FIXED_DEPOSITS`
 
 ### Database Schema
-- **expense_categories**: Predefined and user-created categories
-- **expenses**: Individual transactions with optional category
-- **budgets**: Monthly budget limits per category
-- **loans**: Loan tracking with balance, interest rate, and minimum payment
+- **loans**: Loan tracking with balance, interest rate, EMI amount, start date, and EMI date for automatic balance recalculation
 - **investments**: Investment records by asset class with invested and current value
 
 ### Architecture
@@ -123,6 +97,7 @@ Clean Architecture with three layers:
 
 ## Out of Scope
 
+- Expense tracking, categorization, and budget management
 - Cloud synchronization or external database storage
 - Multi-user or shared account access
 - Multi-currency conversion or exchange rates
@@ -139,13 +114,14 @@ Clean Architecture with three layers:
 
 ## Success Criteria
 
-1. All MVP features (expense, budget, loan, investment, dashboard) are fully functional
+1. All MVP features (loan, investment, dashboard) are fully functional
 2. App operates completely offline after initial model download; no network calls during normal use
 3. Data persists correctly in SQLite between app sessions with unlimited storage
-4. Prepayment calculator on the Loans screen computes new tenure, interest saved, and total interest using real loan data
-5. Dashboard displays accurate summaries across all four financial domains
-6. Code follows Clean Architecture principles with clear layer separation
-7. Unit tests cover all domain use cases
-8. App runs without crashes on Android devices during normal usage
+4. Loan balances recalculate automatically from start date, EMI date, and EMI amount whenever the Loans screen is opened, with manual override still available
+5. Prepayment calculator on the Loans screen computes new tenure, interest saved, and total interest using real loan data
+6. Dashboard displays accurate summaries across loan and investment domains
+7. Code follows Clean Architecture principles with clear layer separation
+8. Unit tests cover all domain use cases
+9. App runs without crashes on Android devices during normal usage
 
 ---

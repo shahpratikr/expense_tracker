@@ -29,6 +29,7 @@ import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.ln
 
+// PRD Feature 1: Prepayment calculator panel — remaining tenure, new tenure, years/interest saved
 @Composable
 fun PrepaymentCalculatorPanel(
     loan: Loan?,
@@ -52,7 +53,7 @@ fun PrepaymentCalculatorPanel(
         }
 
         val monthlyRate = loan.interestRate / 100.0 / 12.0
-        val currentTenureMonths = monthsToPayoff(loan.currentBalance, monthlyRate, loan.emi)
+        val currentTenureMonths = monthsToPayoff(loan.currentBalance, monthlyRate, loan.emiAmount)
 
         // Summary row
         Row(
@@ -67,7 +68,7 @@ fun PrepaymentCalculatorPanel(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SummaryTile("Current EMI", formatMoney(loan.emi), Modifier.weight(1f))
+            SummaryTile("Current EMI", formatMoney(loan.emiAmount), Modifier.weight(1f))
             SummaryTile(
                 "Remaining tenure",
                 if (currentTenureMonths != null) formatTenure(currentTenureMonths) else "—",
@@ -115,7 +116,7 @@ fun PrepaymentCalculatorPanel(
                 calculatePrepayment(
                     balance = loan.currentBalance,
                     monthlyRate = monthlyRate,
-                    emi = loan.emi,
+                    emi = loan.emiAmount,
                     lumpSum = lumpSumText.toDoubleOrNull() ?: 0.0,
                     annualPrepayment = annualPrepaymentText.toDoubleOrNull() ?: 0.0,
                     emiIncrease = emiIncreaseText.toDoubleOrNull() ?: 0.0
@@ -123,7 +124,7 @@ fun PrepaymentCalculatorPanel(
             }
         }
 
-        if (currentTenureMonths != null && loan.emi > 0.0) {
+        if (currentTenureMonths != null && loan.emiAmount > 0.0) {
             Spacer(modifier = Modifier.height(16.dp))
             Text("Results", style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(8.dp))

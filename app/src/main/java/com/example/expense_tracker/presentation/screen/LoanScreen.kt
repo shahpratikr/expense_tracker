@@ -18,7 +18,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,8 +42,10 @@ import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.component.LoanCard
 import com.example.expense_tracker.presentation.component.PrepaymentCalculatorPanel
 import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
+import java.time.LocalDate
 import java.util.Locale
 
+// PRD Feature 1: Loans screen — CRUD list, auto-recalculation on load, and prepayment calculator
 @Composable
 fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -125,9 +126,11 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             initialName = "",
             initialBalance = "",
             initialInterestRate = "",
-            initialEmi = "",
-            onConfirm = { name, balance, rate, emi ->
-                viewModel.addLoan(name, balance, rate, emi)
+            initialEmiAmount = "",
+            initialLoanStartDate = LocalDate.now().toString(),
+            initialEmiDayOfMonth = "1",
+            onConfirm = { name, balance, rate, emiAmount, startDate, emiDay ->
+                viewModel.addLoan(name, balance, rate, emiAmount, startDate, emiDay)
                 showAddDialog = false
             },
             onDismiss = { showAddDialog = false }
@@ -139,11 +142,20 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             title = "Edit Loan",
             initialName = loan.name,
             initialBalance = String.format(Locale.US, "%.2f", loan.currentBalance),
-            initialInterestRate = if (loan.interestRate > 0.0) String.format(Locale.US, "%.2f", loan.interestRate) else "",
-            initialEmi = if (loan.emi > 0.0) String.format(Locale.US, "%.2f", loan.emi) else "",
-            onConfirm = { name, balance, rate, emi ->
+            initialInterestRate = String.format(Locale.US, "%.2f", loan.interestRate),
+            initialEmiAmount = String.format(Locale.US, "%.2f", loan.emiAmount),
+            initialLoanStartDate = loan.loanStartDate.toString(),
+            initialEmiDayOfMonth = loan.emiDayOfMonth.toString(),
+            onConfirm = { name, balance, rate, emiAmount, startDate, emiDay ->
                 viewModel.editLoan(
-                    loan.copy(name = name, currentBalance = balance, interestRate = rate, emi = emi)
+                    loan.copy(
+                        name = name,
+                        currentBalance = balance,
+                        interestRate = rate,
+                        emiAmount = emiAmount,
+                        loanStartDate = startDate,
+                        emiDayOfMonth = emiDay
+                    )
                 )
                 loanToEdit = null
             },
@@ -164,20 +176,25 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     }
 }
 
+// PRD Feature 1: Add/edit loan form — name, balance, interest rate, EMI amount, start date, EMI day
 @Composable
 fun LoanFormDialog(
     title: String,
     initialName: String,
     initialBalance: String,
     initialInterestRate: String,
-    initialEmi: String,
-    onConfirm: (String, Double, Double, Double) -> Unit,
+    initialEmiAmount: String,
+    initialLoanStartDate: String,
+    initialEmiDayOfMonth: String,
+    onConfirm: (String, Double, Double, Double, LocalDate, Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf(TextFieldValue(initialName)) }
     var balance by remember { mutableStateOf(TextFieldValue(initialBalance)) }
     var interestRate by remember { mutableStateOf(TextFieldValue(initialInterestRate)) }
-    var emi by remember { mutableStateOf(TextFieldValue(initialEmi)) }
+    var emiAmount by remember { mutableStateOf(TextFieldValue(initialEmiAmount)) }
+    var loanStartDate by remember { mutableStateOf(TextFieldValue(initialLoanStartDate)) }
+    var emiDayOfMonth by remember { mutableStateOf(TextFieldValue(initialEmiDayOfMonth)) }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -209,10 +226,25 @@ fun LoanFormDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
-                    value = emi,
-                    onValueChange = { emi = it },
-                    label = { Text("Current EMI (monthly payment)") },
+                    value = emiAmount,
+                    onValueChange = { emiAmount = it },
+                    label = { Text("EMI amount (fixed monthly payment)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = loanStartDate,
+                    onValueChange = { loanStartDate = it },
+                    label = { Text("Loan start date (YYYY-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = emiDayOfMonth,
+                    onValueChange = { emiDayOfMonth = it },
+                    label = { Text("EMI date (day of month, 1-31)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
                 validationError?.let { error ->
@@ -226,14 +258,18 @@ fun LoanFormDialog(
                 onClick = {
                     val trimmedName = name.text.trim()
                     val balanceAmount = balance.text.toDoubleOrNull()
-                    val rate = interestRate.text.ifBlank { "0" }.toDoubleOrNull()
-                    val emiAmount = emi.text.ifBlank { "0" }.toDoubleOrNull()
+                    val rate = interestRate.text.toDoubleOrNull()
+                    val emi = emiAmount.text.toDoubleOrNull()
+                    val startDate = runCatching { LocalDate.parse(loanStartDate.text.trim()) }.getOrNull()
+                    val emiDay = emiDayOfMonth.text.toIntOrNull()
                     when {
                         trimmedName.isBlank() -> validationError = "Name is required"
                         balanceAmount == null || balanceAmount < 0 -> validationError = "Enter a valid balance"
-                        rate == null || rate < 0 -> validationError = "Enter a valid interest rate"
-                        emiAmount == null || emiAmount < 0 -> validationError = "Enter a valid EMI"
-                        else -> onConfirm(trimmedName, balanceAmount, rate, emiAmount)
+                        rate == null || rate <= 0 -> validationError = "Enter a valid interest rate"
+                        emi == null || emi <= 0 -> validationError = "Enter a valid EMI amount"
+                        startDate == null -> validationError = "Enter a valid loan start date"
+                        emiDay == null || emiDay !in 1..31 -> validationError = "EMI day must be between 1 and 31"
+                        else -> onConfirm(trimmedName, balanceAmount, rate, emi, startDate, emiDay)
                     }
                 }
             ) {
@@ -248,6 +284,7 @@ fun LoanFormDialog(
     )
 }
 
+// PRD Feature 1: Manual balance override/correction dialog
 @Composable
 fun UpdateBalanceDialog(
     loanName: String,

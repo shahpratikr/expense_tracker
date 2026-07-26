@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.example.expense_tracker.domain.model.Loan
 import java.util.Locale
 
+// PRD Feature 1: Loan list item — shows balance, EMI and interest rate; tap selects it for the calculator
 @Composable
 fun LoanCard(
     loan: Loan,
@@ -49,14 +50,13 @@ fun LoanCard(
                         "Balance: ₹${String.format(Locale.US, "%.2f", loan.currentBalance)}",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    if (loan.emi > 0.0 || loan.interestRate > 0.0) {
-                        Text(
-                            "EMI ₹${String.format(Locale.US, "%,.0f", loan.emi)} · " +
-                                "${String.format(Locale.US, "%.2f", loan.interestRate)}% p.a.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        "EMI ₹${String.format(Locale.US, "%,.0f", loan.emiAmount)} · " +
+                            "${String.format(Locale.US, "%.2f", loan.interestRate)}% p.a. · " +
+                            "due day ${loan.emiDayOfMonth}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Row {

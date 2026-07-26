@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,18 +31,16 @@ import com.example.expense_tracker.presentation.component.ErrorDialog
 import com.example.expense_tracker.presentation.viewmodel.DashboardViewModel
 import java.util.Locale
 
-// R-5: Dashboard screen displaying all four financial summary metrics — each tappable
+// PRD Feature 3: Dashboard screen displaying loan and investment summary metrics — each tappable
 @Composable
 fun DashboardScreen(
-    onSpendingClick: () -> Unit = {},
     onLoanClick: () -> Unit = {},
     onInvestmentClick: () -> Unit = {},
-    onBudgetClick: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // R-5: Error handling UI — show dialog for any dashboard data loading errors
+    // PRD Feature 3: Error handling UI — show dialog for any dashboard data loading errors
     uiState.error?.let { message ->
         ErrorDialog(message = message, onDismiss = { viewModel.clearError() })
     }
@@ -69,15 +66,7 @@ fun DashboardScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // R-5: Monthly spending metric — tappable, navigates to expense list
-                    DashboardMetricCard(
-                        title = "This Month's Spending",
-                        value = "₹${String.format(Locale.US, "%.2f", uiState.totalMonthlySpending)}",
-                        subtitle = "Tap to view expenses",
-                        onClick = onSpendingClick
-                    )
-
-                    // R-5: Total loan balance metric — tappable, navigates to loans screen
+                    // PRD Feature 3: Total loan balance metric — tappable, navigates to loans screen
                     DashboardMetricCard(
                         title = "Total Loan Balance",
                         value = "₹${String.format(Locale.US, "%.2f", uiState.totalLoanBalance)}",
@@ -85,7 +74,7 @@ fun DashboardScreen(
                         onClick = onLoanClick
                     )
 
-                    // R-5: Investment gain/loss metric — tappable, navigates to investments screen
+                    // PRD Feature 3: Investment gain/loss metric — tappable, navigates to investments screen
                     val gainLossSign = if (uiState.totalInvestmentGainLossAmount >= 0) "+" else ""
                     val gainLossColor = if (uiState.totalInvestmentGainLossAmount >= 0)
                         MaterialTheme.colorScheme.tertiary
@@ -99,27 +88,13 @@ fun DashboardScreen(
                         valueColor = gainLossColor,
                         onClick = onInvestmentClick
                     )
-
-                    // R-5: Budget headroom metric — tappable, navigates to budget screen
-                    val headroomColor = if (uiState.budgetHeadroom >= 0)
-                        MaterialTheme.colorScheme.tertiary
-                    else
-                        MaterialTheme.colorScheme.error
-                    val headroomLabel = if (uiState.budgetHeadroom >= 0) "remaining" else "over budget"
-                    DashboardMetricCard(
-                        title = "Budget Headroom",
-                        value = "₹${String.format(Locale.US, "%.2f", uiState.budgetHeadroom)} $headroomLabel",
-                        subtitle = "Tap to manage budgets",
-                        valueColor = headroomColor,
-                        onClick = onBudgetClick
-                    )
                 }
             }
         }
     }
 }
 
-// R-5: Reusable metric card composable — displays a labelled financial figure, tappable for navigation
+// PRD Feature 3: Reusable metric card composable — displays a labelled financial figure, tappable for navigation
 @Composable
 private fun DashboardMetricCard(
     title: String,
