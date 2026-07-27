@@ -16,6 +16,17 @@ object NavRoutes {
     const val INVESTMENT = "investment"
 }
 
+// Pops any existing instance of the destination (and anything on top of it) back down to HOME before
+// pushing a fresh one. Without this, navigating Dashboard <-> Loans repeatedly stacks a new Loans back
+// stack entry (and thus a new LoanViewModel) on every click instead of reusing one, which let overlapping
+// RecalculateLoanBalancesUseCase invocations race and clobber each other's balance update.
+private fun NavHostController.navigateSingleInstance(route: String) {
+    navigate(route) {
+        popUpTo(NavRoutes.HOME)
+        launchSingleTop = true
+    }
+}
+
 // PRD Feature 3: Navigation graph — Home, Loans, Investments, Dashboard (expense/budget/category removed)
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -25,9 +36,9 @@ fun NavGraph(navController: NavHostController) {
     ) {
         composable(NavRoutes.HOME) {
             HomeScreen(
-                onDashboardClick = { navController.navigate(NavRoutes.DASHBOARD) },
-                onLoanClick = { navController.navigate(NavRoutes.LOAN) },
-                onInvestmentClick = { navController.navigate(NavRoutes.INVESTMENT) }
+                onDashboardClick = { navController.navigateSingleInstance(NavRoutes.DASHBOARD) },
+                onLoanClick = { navController.navigateSingleInstance(NavRoutes.LOAN) },
+                onInvestmentClick = { navController.navigateSingleInstance(NavRoutes.INVESTMENT) }
             )
         }
         composable(NavRoutes.LOAN) {
@@ -35,8 +46,8 @@ fun NavGraph(navController: NavHostController) {
         }
         composable(NavRoutes.DASHBOARD) {
             DashboardScreen(
-                onLoanClick = { navController.navigate(NavRoutes.LOAN) },
-                onInvestmentClick = { navController.navigate(NavRoutes.INVESTMENT) }
+                onLoanClick = { navController.navigateSingleInstance(NavRoutes.LOAN) },
+                onInvestmentClick = { navController.navigateSingleInstance(NavRoutes.INVESTMENT) }
             )
         }
         composable(NavRoutes.INVESTMENT) {

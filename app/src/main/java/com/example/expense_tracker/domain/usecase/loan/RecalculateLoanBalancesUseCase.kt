@@ -3,14 +3,20 @@ package com.example.expense_tracker.domain.usecase.loan
 import com.example.expense_tracker.domain.model.Loan
 import com.example.expense_tracker.domain.repository.ILoanRepository
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 
 // PRD Feature 1: Auto-recalculates each loan's balance for every elapsed EMI date since the last update
 class RecalculateLoanBalancesUseCase(private val loanRepository: ILoanRepository) {
+    // Serializes invocations so overlapping calls (e.g. rapid nav between screens that each trigger a
+    // recalculation) can't read the same stale loan snapshot and clobber each other's balance update.
+    private val mutex = Mutex()
+
     // PRD Feature 1: Runs on Loans screen load; returns warnings for loans whose EMI can't cover interest
-    suspend operator fun invoke(today: LocalDate = LocalDate.now()): List<String> {
+    suspend operator fun invoke(today: LocalDate = LocalDate.now()): List<String> = mutex.withLock {
         val loans = loanRepository.getAll().first()
-        return loans.mapNotNull { loan -> recalculate(loan, today) }
+        loans.mapNotNull { loan -> recalculate(loan, today) }
     }
 
     private suspend fun recalculate(loan: Loan, today: LocalDate): String? {

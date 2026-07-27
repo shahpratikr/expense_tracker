@@ -159,7 +159,8 @@ fun PrepaymentCalculatorPanel(
                 SummaryTile(
                     "Total interest (new)",
                     formatMoney(result.newInterest.coerceAtLeast(0.0)),
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
+                    highlight = true
                 )
             }
         }

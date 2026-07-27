@@ -81,11 +81,12 @@ class LoanViewModel @Inject constructor(
         interestRate: Double,
         emiAmount: Double,
         loanStartDate: LocalDate,
-        emiDayOfMonth: Int
+        emiDayOfMonth: Int,
+        lastBalanceUpdateDate: LocalDate = loanStartDate
     ) {
         viewModelScope.launch {
             try {
-                addLoanUseCase(name, currentBalance, interestRate, emiAmount, loanStartDate, emiDayOfMonth)
+                addLoanUseCase(name, currentBalance, interestRate, emiAmount, loanStartDate, emiDayOfMonth, lastBalanceUpdateDate)
             } catch (exception: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = exception.message ?: "Failed to add loan"

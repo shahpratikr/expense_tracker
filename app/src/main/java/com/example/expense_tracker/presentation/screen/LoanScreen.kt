@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +45,7 @@ import com.example.expense_tracker.presentation.component.PrepaymentCalculatorPa
 import com.example.expense_tracker.presentation.viewmodel.LoanViewModel
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.pow
 
 // PRD Feature 1: Loans screen — CRUD list, auto-recalculation on load, and prepayment calculator
 @Composable
@@ -121,16 +123,9 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
     }
 
     if (showAddDialog) {
-        LoanFormDialog(
-            title = "Add Loan",
-            initialName = "",
-            initialBalance = "",
-            initialInterestRate = "",
-            initialEmiAmount = "",
-            initialLoanStartDate = LocalDate.now().toString(),
-            initialEmiDayOfMonth = "1",
-            onConfirm = { name, balance, rate, emiAmount, startDate, emiDay ->
-                viewModel.addLoan(name, balance, rate, emiAmount, startDate, emiDay)
+        AddLoanFormDialog(
+            onConfirm = { name, balance, rate, emiAmount, startDate, emiDay, lastBalanceUpdateDate ->
+                viewModel.addLoan(name, balance, rate, emiAmount, startDate, emiDay, lastBalanceUpdateDate)
                 showAddDialog = false
             },
             onDismiss = { showAddDialog = false }
@@ -174,6 +169,187 @@ fun LoanScreen(viewModel: LoanViewModel = hiltViewModel()) {
             onDismiss = { loanToUpdateBalance = null }
         )
     }
+}
+
+// Standard EMI formula: P * r * (1+r)^n / ((1+r)^n - 1), used to suggest an EMI from principal/tenure/rate
+private fun calculateStandardEmi(principal: Double, interestRate: Double, tenureMonths: Int): Double {
+    if (principal <= 0 || tenureMonths <= 0) return 0.0
+    val monthlyRate = interestRate / 12.0 / 100.0
+    if (monthlyRate <= 0.0) return principal / tenureMonths
+    val factor = (1 + monthlyRate).pow(tenureMonths)
+    return principal * monthlyRate * factor / (factor - 1)
+}
+
+// Result of simulating principal amortization up to today: the derived balance, and the last EMI
+// date that was actually applied (must become the loan's lastBalanceUpdateDate so
+// RecalculateLoanBalancesUseCase doesn't replay these same cycles again on the next screen load).
+private data class DerivedBalance(val balance: Double, val lastAppliedDate: LocalDate)
+
+// Derives current balance from the original principal by applying one amortization cycle for every
+// EMI date elapsed since loanStartDate, mirroring RecalculateLoanBalancesUseCase's cycle math.
+// Returns null if the EMI amount can't cover accrued interest (negative amortization).
+private fun deriveCurrentBalanceFromPrincipal(
+    principal: Double,
+    interestRate: Double,
+    emiAmount: Double,
+    loanStartDate: LocalDate,
+    emiDayOfMonth: Int,
+    today: LocalDate = LocalDate.now()
+): DerivedBalance? {
+    val monthlyRate = interestRate / 12.0 / 100.0
+    var balance = principal
+    var lastAppliedDate = loanStartDate
+    var cursor = loanStartDate.withDayOfMonth(minOf(emiDayOfMonth, loanStartDate.lengthOfMonth()))
+    if (!cursor.isAfter(loanStartDate)) {
+        cursor = cursor.plusMonths(1)
+    }
+    while (!cursor.isAfter(today)) {
+        val emiDate = cursor.withDayOfMonth(minOf(emiDayOfMonth, cursor.lengthOfMonth()))
+        if (emiDate.isAfter(loanStartDate) && !emiDate.isAfter(today)) {
+            val interest = balance * monthlyRate
+            if (emiAmount <= interest) return null
+            balance = (balance - (emiAmount - interest)).coerceAtLeast(0.0)
+            lastAppliedDate = emiDate
+        }
+        cursor = cursor.plusMonths(1)
+    }
+    return DerivedBalance(balance, lastAppliedDate)
+}
+
+// PRD Feature 1 enhancement: Add-loan form collects total loan amount + loan period instead of a
+// direct balance entry; EMI is auto-suggested from those inputs (still user-editable) and the
+// starting current balance is derived by simulating elapsed EMI cycles since the start date.
+@Composable
+fun AddLoanFormDialog(
+    onConfirm: (String, Double, Double, Double, LocalDate, Int, LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(TextFieldValue("")) }
+    var totalLoanAmount by remember { mutableStateOf(TextFieldValue("")) }
+    var loanPeriodMonths by remember { mutableStateOf(TextFieldValue("")) }
+    var interestRate by remember { mutableStateOf(TextFieldValue("")) }
+    var emiAmount by remember { mutableStateOf(TextFieldValue("")) }
+    var loanStartDate by remember { mutableStateOf(TextFieldValue(LocalDate.now().toString())) }
+    var emiDayOfMonth by remember { mutableStateOf(TextFieldValue("1")) }
+    var lastSuggestedEmi by remember { mutableStateOf<String?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(totalLoanAmount.text, loanPeriodMonths.text, interestRate.text) {
+        val principal = totalLoanAmount.text.toDoubleOrNull()
+        val tenure = loanPeriodMonths.text.toIntOrNull()
+        val rate = interestRate.text.toDoubleOrNull()
+        if (principal != null && principal > 0 && tenure != null && tenure > 0 && rate != null && rate > 0) {
+            val suggested = String.format(Locale.US, "%.2f", calculateStandardEmi(principal, rate, tenure))
+            // Only overwrite the EMI field if the user hasn't typed their own override since the last suggestion
+            if (emiAmount.text.isBlank() || emiAmount.text == lastSuggestedEmi) {
+                emiAmount = TextFieldValue(suggested)
+            }
+            lastSuggestedEmi = suggested
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Loan") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = totalLoanAmount,
+                    onValueChange = { totalLoanAmount = it },
+                    label = { Text("Total Loan Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = loanPeriodMonths,
+                    onValueChange = { loanPeriodMonths = it },
+                    label = { Text("Loan Period (months)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = interestRate,
+                    onValueChange = { interestRate = it },
+                    label = { Text("Interest Rate (% per year)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = emiAmount,
+                    onValueChange = { emiAmount = it },
+                    label = { Text("EMI amount (auto-calculated, editable)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = loanStartDate,
+                    onValueChange = { loanStartDate = it },
+                    label = { Text("Loan start date (YYYY-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = emiDayOfMonth,
+                    onValueChange = { emiDayOfMonth = it },
+                    label = { Text("EMI date (day of month, 1-31)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                validationError?.let { error ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val trimmedName = name.text.trim()
+                    val principal = totalLoanAmount.text.toDoubleOrNull()
+                    val tenure = loanPeriodMonths.text.toIntOrNull()
+                    val rate = interestRate.text.toDoubleOrNull()
+                    val emi = emiAmount.text.toDoubleOrNull()
+                    val startDate = runCatching { LocalDate.parse(loanStartDate.text.trim()) }.getOrNull()
+                    val emiDay = emiDayOfMonth.text.toIntOrNull()
+                    when {
+                        trimmedName.isBlank() -> validationError = "Name is required"
+                        principal == null || principal <= 0 -> validationError = "Enter a valid total loan amount"
+                        tenure == null || tenure <= 0 -> validationError = "Enter a valid loan period"
+                        rate == null || rate <= 0 -> validationError = "Enter a valid interest rate"
+                        emi == null || emi <= 0 -> validationError = "Enter a valid EMI amount"
+                        startDate == null -> validationError = "Enter a valid loan start date"
+                        emiDay == null || emiDay !in 1..31 -> validationError = "EMI day must be between 1 and 31"
+                        else -> {
+                            val derived = deriveCurrentBalanceFromPrincipal(principal, rate, emi, startDate, emiDay)
+                            if (derived == null) {
+                                validationError = "EMI amount is too low to cover accrued interest at this rate"
+                            } else {
+                                onConfirm(trimmedName, derived.balance, rate, emi, startDate, emiDay, derived.lastAppliedDate)
+                            }
+                        }
+                    }
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 // PRD Feature 1: Add/edit loan form — name, balance, interest rate, EMI amount, start date, EMI day

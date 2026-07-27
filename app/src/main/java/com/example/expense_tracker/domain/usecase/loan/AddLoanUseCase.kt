@@ -12,7 +12,8 @@ class AddLoanUseCase(private val loanRepository: ILoanRepository) {
         interestRate: Double,
         emiAmount: Double,
         loanStartDate: LocalDate,
-        emiDayOfMonth: Int
+        emiDayOfMonth: Int,
+        lastBalanceUpdateDate: LocalDate = loanStartDate
     ): Long {
         require(name.isNotBlank()) { "Loan name must not be empty" }
         require(currentBalance >= 0) { "Loan balance must be >= 0" }
@@ -26,7 +27,7 @@ class AddLoanUseCase(private val loanRepository: ILoanRepository) {
             emiAmount = emiAmount,
             loanStartDate = loanStartDate,
             emiDayOfMonth = emiDayOfMonth,
-            lastBalanceUpdateDate = loanStartDate,
+            lastBalanceUpdateDate = lastBalanceUpdateDate,
             createdAt = LocalDate.now()
         )
         return loanRepository.add(loan)
